@@ -180,13 +180,25 @@ export default function ManagePage({ space, slug }: Props) {
         </Button>
       </section>
 
-      {/* Availability */}
+      {/* Availability / Rules */}
       <section className="space-y-4 pt-4 border-t border-gray-200">
-        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Availability</h2>
-        <p className="text-xs text-gray-400">Change which days are bookable, capacity, and calendar view.</p>
-        <Button variant="secondary" onClick={() => router.push(`/space/${slug}/setup`)}>
-          Reconfigure availability →
-        </Button>
+        {(space as any).space_type === 'holiday_home' ? (
+          <>
+            <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Rules</h2>
+            <p className="text-xs text-gray-400">Update nights per year, max consecutive nights, and booking window.</p>
+            <Button variant="secondary" onClick={() => router.push(`/space/${slug}/setup?step=2`)}>
+              Edit rules →
+            </Button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Availability</h2>
+            <p className="text-xs text-gray-400">Change which days are bookable and hours per week per member.</p>
+            <Button variant="secondary" onClick={() => router.push(`/space/${slug}/setup?step=2`)}>
+              Reconfigure availability →
+            </Button>
+          </>
+        )}
       </section>
 
       {/* Invite link */}

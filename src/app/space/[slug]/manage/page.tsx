@@ -16,7 +16,7 @@ export default async function Page({ params }: Props) {
 
   const { data: space } = await supabase
     .from('spaces')
-    .select('id, name, slug, description, welcome_message, contact_email, contact_phone, address, hero_image_url, default_view, onboarding_completed_at, plan_type, owner_id, created_at, updated_at')
+    .select('id, name, slug, description, welcome_message, contact_email, contact_phone, address, hero_image_url, default_view, onboarding_completed_at, plan_type, owner_id, created_at, updated_at, space_type')
     .eq('slug', slug)
     .single();
   if (!space) return notFound();
@@ -32,5 +32,5 @@ export default async function Page({ params }: Props) {
     redirect(`/space/${slug}/schedule`);
   }
 
-  return <ManagePage space={space} slug={slug} />;
+  return <ManagePage space={space as any} slug={slug} />;
 }

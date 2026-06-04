@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { saveSpaceDetails, saveAvailability, completeOnboarding, saveSpaceType, saveHolidayRules } from '@/lib/actions/setup';
 import type { Space } from '@/types';
 import Button from '@/components/ui/Button';
@@ -25,9 +25,13 @@ export default function SetupFlow({ space }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError]            = useState<string | null>(null);
 
+  const searchParams = useSearchParams();
   const existingType = (space as any).space_type as 'workplace' | 'holiday_home' | null ?? null;
   const [spaceType, setSpaceType] = useState<'workplace' | 'holiday_home' | null>(existingType);
-  const [step, setStep]              = useState(existingType ? 1 : 0);
+  const initialStep = existingType
+    ? (searchParams.get('step') === '2' ? 2 : 1)
+    : 0;
+  const [step, setStep] = useState(initialStep);
 
   const [name, setName]        = useState(space.name);
   const [description, setDesc] = useState(space.description ?? '');
