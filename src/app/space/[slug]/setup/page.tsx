@@ -18,7 +18,7 @@ export default async function SetupPage({ params }: Props) {
 
   const { data: space } = await supabase
     .from('spaces')
-    .select('id, name, slug, description, welcome_message, contact_email, contact_phone, address, default_view, onboarding_completed_at, plan_type, owner_id, created_at, updated_at')
+    .select('id, name, slug, description, welcome_message, contact_email, contact_phone, address, hero_image_url, default_view, onboarding_completed_at, plan_type, owner_id, created_at, updated_at')
     .eq('slug', slug)
     .single();
 

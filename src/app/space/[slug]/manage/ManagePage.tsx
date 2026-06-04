@@ -46,7 +46,7 @@ export default function ManagePage({ space, slug }: Props) {
     const { data: { publicUrl } } = supabase.storage.from('space-images').getPublicUrl(path);
     const url = `${publicUrl}?t=${Date.now()}`;
     setHeroUrl(url);
-    await supabase.from('spaces').update({ hero_image_url: url }).eq('id', space.id);
+    await (supabase.from('spaces') as any).update({ hero_image_url: url }).eq('id', space.id);
     setHeroUploading(false);
     setBasicMsg('Hero image updated.');
   }
