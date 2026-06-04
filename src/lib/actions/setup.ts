@@ -1,0 +1,116 @@
+'use server';
+
+import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/supabase/server';
+import type { CalendarView } from '@/types';
+
+// Step 1: save space name + description
+export async function saveSpaceDetails(spaceId: string, name: string, description: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
+
+  const service = createSupabaseServiceClient();
+  const { error } = await service
+    .from('spaces')
+    .update({ name: name.trim(), description: description.trim() || null })
+    .eq('id', spaceId);
+
+  return error ? { success: false as const, error: error.message } : { success: true as const };
+}
+
+const ALL_SLOT_TIMES = [
+  { start: '00:00', end: '23:59', hours: 8 }, // Full day
+  { start: '08:00', end: '13:00', hours: 4 }, // Morning
+  { start: '13:00', end: '18:00', hours: 4 }, // Afternoon
+];
+
+// Step 2: save availability + view preference
+export async function saveAvailability(
+  spaceId:   string,
+  spaceName: string,
+  days:      number[],
+  view:      CalendarView,
+  capacity:  number,
+  credits:   number,
+) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
+
+  const service = createSupabaseServiceClient();
+
+  // Save view preference
+  await service.from('spaces').update({ default_view: view }).eq('id', spaceId);
+
+  // Create or reuse the default resource
+  const { data: existing } = await service
+    .from('resources')
+    .select('id')
+    .eq('space_id', spaceId)
+    .limit(1)
+    .single();
+
+  let resourceId: string;
+
+  if (existing) {
+    resourceId = existing.id;
+    // With ON DELETE CASCADE on bookings.slot_id, deleting slots removes bookings automatically
+    await service.from('slots').delete().eq('resource_id', resourceId);
+  } else {
+    const { data: newResource, error: resErr } = await service
+      .from('resources')
+      .insert({ space_id: spaceId, name: spaceName })
+      .select('id')
+      .single();
+    if (resErr) return { success: false as const, error: resErr.message };
+    resourceId = newResource.id;
+  }
+
+  // Build slots: full day + morning + afternoon for each selected day
+  if (days.length > 0) {
+    const slots = days.flatMap(day =>
+      ALL_SLOT_TIMES.map(w => ({
+        resource_id:    resourceId,
+        space_id:       spaceId,
+        slot_type:      'recurring' as const,
+        recurrence_day: day,
+        start_time:     w.start,
+        end_time:       w.end,
+        max_capacity:   capacity,
+        credit_cost:    w.hours,
+      }))
+    );
+
+    const { error: slotErr } = await service.from('slots').insert(slots);
+    if (slotErr) return { success: false as const, error: slotErr.message };
+  }
+
+  return { success: true as const };
+}
+
+// Step 3: generate invite token + complete onboarding
+export async function completeOnboarding(spaceId: string, welcomeMessage: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
+
+  const service = createSupabaseServiceClient();
+
+  // Save welcome message + mark onboarding done
+  await service.from('spaces').update({
+    welcome_message:         welcomeMessage.trim() || null,
+    onboarding_completed_at: new Date().toISOString(),
+  }).eq('id', spaceId);
+
+  // Create a default invite token (delete previous if exists)
+  await service.from('invite_tokens').delete().eq('space_id', spaceId);
+  const { data: token, error } = await service
+    .from('invite_tokens')
+    .insert({ space_id: spaceId, created_by: user.id })
+    .select('token')
+    .single();
+
+  if (error) return { success: false as const, error: error.message };
+
+  return { success: true as const, token: token.token };
+}
