@@ -6,6 +6,9 @@ import { updateSpaceDetails, generateInviteLink } from '@/lib/actions/profile';
 import { saveSpaceDetails } from '@/lib/actions/setup';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Space } from '@/types';
+import Button from '@/components/ui/Button';
+import { Input, Textarea } from '@/components/ui/Input';
+import Label from '@/components/ui/Label';
 
 interface Props {
   space: Space;
@@ -80,16 +83,12 @@ export default function ManagePage({ space, slug }: Props) {
     if (inviteUrl) navigator.clipboard.writeText(inviteUrl);
   }
 
-  const inputCls = 'w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors';
-  const labelCls = 'text-sm font-medium text-gray-600';
-
   return (
     <div className="max-w-lg mx-auto w-full space-y-10 py-4">
 
-      <button onClick={() => router.push(`/space/${slug}/schedule`)}
-        className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
+      <Button variant="ghost" size="sm" onClick={() => router.push(`/space/${slug}/schedule`)}>
         ← Back to schedule
-      </button>
+      </Button>
 
       <div>
         <h1 className="text-2xl font-bold text-gray-900">My Spaces</h1>
@@ -102,7 +101,7 @@ export default function ManagePage({ space, slug }: Props) {
 
         {/* Hero image */}
         <div className="space-y-2">
-          <label className={labelCls}>Hero image</label>
+          <Label>Hero image</Label>
           <button
             type="button"
             onClick={() => heroFileRef.current?.click()}
@@ -130,22 +129,20 @@ export default function ManagePage({ space, slug }: Props) {
         </div>
 
         <div className="space-y-2">
-          <label className={labelCls}>Space name</label>
-          <input value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+          <Label>Space name</Label>
+          <Input value={name} onChange={e => setName(e.target.value)} />
         </div>
 
         <div className="space-y-2">
-          <label className={labelCls}>Description</label>
-          <textarea value={description} onChange={e => setDescription(e.target.value)}
-            rows={2} placeholder="A short description of the space"
-            className={`${inputCls} resize-none`} />
+          <Label>Description</Label>
+          <Textarea value={description} onChange={e => setDescription(e.target.value)}
+            rows={2} placeholder="A short description of the space" />
         </div>
 
         {basicMsg && <p className={`text-sm ${basicMsg === 'Saved.' ? 'text-emerald-600' : 'text-red-500'}`}>{basicMsg}</p>}
-        <button onClick={handleSaveBasics} disabled={isBasic || !name.trim()}
-          className="w-full bg-gray-900 text-white rounded-2xl py-4 font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors">
+        <Button onClick={handleSaveBasics} disabled={isBasic || !name.trim()}>
           {isBasic ? 'Saving…' : 'Save basics'}
-        </button>
+        </Button>
       </section>
 
       {/* Contact & info */}
@@ -154,46 +151,42 @@ export default function ManagePage({ space, slug }: Props) {
         <p className="text-xs text-gray-400 -mt-3">Shown in the space info panel for all members.</p>
 
         <div className="space-y-2">
-          <label className={labelCls}>Welcome message</label>
-          <textarea value={welcome} onChange={e => setWelcome(e.target.value)}
-            rows={3} placeholder="Welcome to the space…"
-            className={`${inputCls} resize-none`} />
+          <Label>Welcome message</Label>
+          <Textarea value={welcome} onChange={e => setWelcome(e.target.value)}
+            rows={3} placeholder="Welcome to the space…" />
         </div>
 
         <div className="space-y-2">
-          <label className={labelCls}>Contact email</label>
-          <input value={email} onChange={e => setEmail(e.target.value)} type="email"
-            placeholder="hello@studio.com" className={inputCls} />
+          <Label>Contact email</Label>
+          <Input value={email} onChange={e => setEmail(e.target.value)} type="email"
+            placeholder="hello@studio.com" />
         </div>
 
         <div className="space-y-2">
-          <label className={labelCls}>Contact phone</label>
-          <input value={phone} onChange={e => setPhone(e.target.value)} type="tel"
-            placeholder="+31 6 12345678" className={inputCls} />
+          <Label>Contact phone</Label>
+          <Input value={phone} onChange={e => setPhone(e.target.value)} type="tel"
+            placeholder="+31 6 12345678" />
         </div>
 
         <div className="space-y-2">
-          <label className={labelCls}>Address</label>
-          <textarea value={address} onChange={e => setAddress(e.target.value)}
-            rows={2} placeholder="Keizersgracht 123, Amsterdam"
-            className={`${inputCls} resize-none`} />
+          <Label>Address</Label>
+          <Textarea value={address} onChange={e => setAddress(e.target.value)}
+            rows={2} placeholder="Keizersgracht 123, Amsterdam" />
         </div>
 
         {detailMsg && <p className={`text-sm ${detailMsg === 'Saved.' ? 'text-emerald-600' : 'text-red-500'}`}>{detailMsg}</p>}
-        <button onClick={handleSaveDetails} disabled={isDetail}
-          className="w-full bg-gray-900 text-white rounded-2xl py-4 font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors">
+        <Button onClick={handleSaveDetails} disabled={isDetail}>
           {isDetail ? 'Saving…' : 'Save details'}
-        </button>
+        </Button>
       </section>
 
       {/* Availability */}
       <section className="space-y-4 pt-4 border-t border-gray-200">
         <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Availability</h2>
         <p className="text-xs text-gray-400">Change which days are bookable, capacity, and calendar view.</p>
-        <button onClick={() => router.push(`/space/${slug}/setup`)}
-          className="w-full border border-gray-200 text-gray-700 rounded-2xl py-4 font-semibold hover:bg-gray-50 transition-colors">
+        <Button variant="secondary" onClick={() => router.push(`/space/${slug}/setup`)}>
           Reconfigure availability →
-        </button>
+        </Button>
       </section>
 
       {/* Invite link */}
@@ -203,16 +196,12 @@ export default function ManagePage({ space, slug }: Props) {
         {inviteUrl ? (
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
             <p className="text-sm text-gray-500 font-mono break-all">{inviteUrl}</p>
-            <button onClick={copyInvite}
-              className="w-full bg-white border border-gray-200 hover:bg-gray-50 rounded-xl py-3 text-sm font-semibold text-gray-700 transition-colors">
-              Copy link
-            </button>
+            <Button variant="secondary" size="md" onClick={copyInvite}>Copy link</Button>
           </div>
         ) : (
-          <button onClick={generateInvite} disabled={loadingInvite}
-            className="w-full border border-gray-200 text-gray-700 rounded-2xl py-4 font-semibold hover:bg-gray-50 disabled:opacity-40 transition-colors">
+          <Button variant="secondary" onClick={generateInvite} disabled={loadingInvite}>
             {loadingInvite ? 'Generating…' : 'Generate invite link'}
-          </button>
+          </Button>
         )}
       </section>
     </div>

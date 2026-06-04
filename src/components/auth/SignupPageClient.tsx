@@ -84,11 +84,11 @@ function WordCycle() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center gap-2 mb-8 select-none pointer-events-none">
-      <span className="text-gray-400 text-sm font-medium">Share</span>
-      <div className="relative overflow-hidden" style={{ width: '140px' }}>
+    <div className="flex flex-col items-center mb-8 select-none pointer-events-none" style={{ gap: '2px' }}>
+      <span className="text-gray-400 text-2xl font-semibold">Share</span>
+      <div className="relative overflow-hidden flex justify-center" style={{ width: '260px' }}>
         <span
-          className="block text-sm font-medium text-gray-900 transition-all duration-300"
+          className="block text-2xl font-semibold text-gray-900 text-center transition-all duration-300"
           style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(-8px)' }}
         >
           {CYCLING_WORDS[index]}
@@ -121,7 +121,7 @@ function MorphButton() {
         className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white border border-gray-200 overflow-hidden cursor-pointer"
         style={{
           zIndex: 50,
-          width:        expanded ? '340px' : '120px',
+          width:        expanded ? '340px' : '160px',
           height:       expanded ? '420px' : '40px',
           borderRadius: expanded ? '24px' : '12px',
           transition:   'all 0.5s cubic-bezier(0.32, 0.72, 0, 1)',
@@ -137,7 +137,7 @@ function MorphButton() {
             pointerEvents: expanded ? 'none' : 'auto',
           }}
         >
-          What is this?
+          More information
         </div>
 
         {/* Expanded content */}
@@ -220,15 +220,6 @@ export default function SignupPageClient({ mode }: { mode: 'login' | 'signup' })
 
       {/* Form card */}
       <div className="relative z-20 w-full max-w-sm bg-white rounded-3xl border border-gray-200 px-8 py-8 space-y-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {mode === 'signup' ? 'Create account' : 'Welcome back'}
-          </h1>
-          <p className="text-sm text-gray-400">
-            {mode === 'signup' ? 'Join Shared Spaces' : 'Sign in to your space'}
-          </p>
-        </div>
-
         <AuthForm mode={mode} />
 
         <p className="text-sm text-gray-400 text-center">

@@ -3,6 +3,7 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { joinSpace } from '@/lib/actions/join';
+import Button from '@/components/ui/Button';
 
 interface Props {
   token:          string;
@@ -61,13 +62,9 @@ export default function JoinScreen({ token, spaceName, welcomeMessage, heroImage
                 </div>
 
                 <div className="space-y-3">
-                  <button
-                    onClick={handleJoin}
-                    disabled={isPending}
-                    className="w-full bg-gray-900 text-white rounded-2xl py-4 text-base font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors"
-                  >
+                  <Button onClick={handleJoin} disabled={isPending}>
                     {isPending ? 'Joining…' : isLoggedIn ? `Join ${spaceName}` : 'Sign in to join'}
-                  </button>
+                  </Button>
 
                   {!isLoggedIn && (
                     <p className="text-center text-sm text-gray-400">

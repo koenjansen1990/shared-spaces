@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveSpaceDetails, saveAvailability, completeOnboarding } from '@/lib/actions/setup';
 import type { Space, CalendarView } from '@/types';
+import Button from '@/components/ui/Button';
+import { Input, Textarea } from '@/components/ui/Input';
 
 const DAYS = [
   { label: 'Mo', value: 1 },
@@ -81,9 +83,6 @@ export default function SetupFlow({ space }: Props) {
 
   function handleEnter() { router.push(`/space/${space.slug}/schedule`); }
 
-  const inputCls = `w-full bg-white border border-gray-200 rounded-2xl px-6 py-5
-    text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors`;
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
@@ -114,20 +113,18 @@ export default function SetupFlow({ space }: Props) {
             </div>
 
             <div className="space-y-4">
-              <input autoFocus value={name} onChange={e => setName(e.target.value)}
-                placeholder="Otis August Studio"
-                className={`${inputCls} text-2xl font-medium`} />
-              <textarea value={description} onChange={e => setDesc(e.target.value)}
+              <Input autoFocus value={name} onChange={e => setName(e.target.value)}
+                placeholder="Otis August Studio" className="text-2xl font-medium" />
+              <Textarea value={description} onChange={e => setDesc(e.target.value)}
                 placeholder="A short description — optional. What kind of space is this?"
-                rows={3} className={`${inputCls} text-lg resize-none`} />
+                rows={3} className="text-lg" />
             </div>
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
-            <button onClick={handleStep1} disabled={isPending || !name.trim()}
-              className="w-full bg-gray-900 text-white rounded-2xl py-5 text-lg font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors">
+            <Button onClick={handleStep1} disabled={isPending || !name.trim()}>
               {isPending ? 'Saving…' : 'Continue'}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -174,14 +171,10 @@ export default function SetupFlow({ space }: Props) {
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="space-y-3">
-              <button onClick={handleStep2} disabled={isPending}
-                className="w-full bg-gray-900 text-white rounded-2xl py-5 text-lg font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors">
+              <Button onClick={handleStep2} disabled={isPending}>
                 {isPending ? 'Saving…' : 'Continue'}
-              </button>
-              <button onClick={() => setStep(1)}
-                className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
-                Back
-              </button>
+              </Button>
+              <Button variant="ghost" size="md" full onClick={() => setStep(1)}>Back</Button>
             </div>
           </div>
         )}
@@ -197,21 +190,17 @@ export default function SetupFlow({ space }: Props) {
                   <p className="text-gray-400">Add a short message members will see when they join. Optional.</p>
                 </div>
 
-                <textarea value={welcome} onChange={e => setWelcome(e.target.value)}
+                <Textarea value={welcome} onChange={e => setWelcome(e.target.value)}
                   placeholder={`Welcome to ${name}. We share this space together — please be respectful of each other's sessions.`}
-                  rows={4} className={`${inputCls} text-lg resize-none`} />
+                  rows={4} className="text-lg" />
 
                 {error && <p className="text-red-500 text-sm">{error}</p>}
 
                 <div className="space-y-3">
-                  <button onClick={handleStep3} disabled={isPending}
-                    className="w-full bg-gray-900 text-white rounded-2xl py-5 text-lg font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors">
+                  <Button onClick={handleStep3} disabled={isPending}>
                     {isPending ? 'Finishing…' : 'Generate invite link'}
-                  </button>
-                  <button onClick={() => setStep(2)}
-                    className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
-                    Back
-                  </button>
+                  </Button>
+                  <Button variant="ghost" size="md" full onClick={() => setStep(2)}>Back</Button>
                 </div>
               </>
             ) : (
@@ -226,25 +215,21 @@ export default function SetupFlow({ space }: Props) {
                   <p className="text-sm text-gray-500 font-mono break-all">
                     {typeof window !== 'undefined' ? `${window.location.origin}/join/${inviteToken}` : `/join/${inviteToken}`}
                   </p>
-                  <button onClick={copyLink}
-                    className="w-full bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl py-3 text-sm font-semibold text-gray-700 transition-colors">
+                  <Button variant="secondary" size="md" onClick={copyLink}>
                     {copied ? '✓ Copied' : 'Copy invite link'}
-                  </button>
+                  </Button>
                 </div>
 
-                <button onClick={handleEnter}
-                  className="w-full bg-gray-900 text-white rounded-2xl py-5 text-lg font-semibold hover:bg-gray-800 transition-colors">
-                  Enter {name} →
-                </button>
+                <Button onClick={handleEnter}>Enter {name} →</Button>
               </div>
             )}
           </div>
         )}
 
         {!inviteToken && (
-          <button onClick={handleEnter} className="mt-8 text-sm text-gray-400 hover:text-gray-600 transition-colors">
+          <Button variant="ghost" size="sm" onClick={handleEnter} className="mt-8">
             Continue later
-          </button>
+          </Button>
         )}
       </div>
     </div>

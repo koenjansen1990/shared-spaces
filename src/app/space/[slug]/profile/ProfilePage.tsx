@@ -4,6 +4,9 @@ import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { updateProfile, updateAvatarUrl } from '@/lib/actions/profile';
+import Button from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import Label from '@/components/ui/Label';
 
 interface SpaceInfo {
   id:              string;
@@ -70,15 +73,12 @@ export default function ProfilePage({ userId, email, displayName: initialName, a
     });
   }
 
-  const inputCls = 'w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors';
-
   return (
     <div className="max-w-lg mx-auto w-full space-y-10 py-4">
 
-      <button onClick={() => router.push(`/space/${slug}/schedule`)}
-        className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
+      <Button variant="ghost" size="sm" onClick={() => router.push(`/space/${slug}/schedule`)}>
         ← Back to schedule
-      </button>
+      </Button>
 
       <section className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
@@ -105,14 +105,14 @@ export default function ProfilePage({ userId, email, displayName: initialName, a
 
         {/* Display name */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-600">Display name</label>
-          <input value={displayName} onChange={e => setDisplayName(e.target.value)}
-            placeholder="Your name" className={inputCls} />
+          <Label>Display name</Label>
+          <Input value={displayName} onChange={e => setDisplayName(e.target.value)}
+            placeholder="Your name" />
         </div>
 
         {/* Email read-only */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-600">Email</label>
+          <Label>Email</Label>
           <div className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-gray-400 text-sm">
             {email}
           </div>
@@ -124,18 +124,16 @@ export default function ProfilePage({ userId, email, displayName: initialName, a
           </p>
         )}
 
-        <button onClick={handleSaveProfile} disabled={isPending}
-          className="w-full bg-gray-900 text-white rounded-2xl py-4 font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors">
+        <Button onClick={handleSaveProfile} disabled={isPending}>
           {isPending ? 'Saving…' : 'Save profile'}
-        </button>
+        </Button>
       </section>
 
       {isAdmin && (
         <section className="pt-4 border-t border-gray-200">
-          <button onClick={() => router.push(`/space/${slug}/manage`)}
-            className="w-full border border-gray-200 text-gray-700 rounded-2xl py-4 font-semibold hover:bg-gray-50 transition-colors">
+          <Button variant="secondary" onClick={() => router.push(`/space/${slug}/manage`)}>
             Manage space →
-          </button>
+          </Button>
         </section>
       )}
     </div>
