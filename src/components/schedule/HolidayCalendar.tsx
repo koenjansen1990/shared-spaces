@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { generateInviteLink } from '@/lib/actions/profile';
+import { createHolidayBooking, cancelHolidayBooking } from '@/lib/actions/holiday';
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -43,40 +44,15 @@ interface Props {
   membersList: HolidayMemberInfo[];
 }
 
-// ── Mock data ─────────────────────────────────────────────────
+// ── Styles — matches WeeklyCalendar slot states ────────────────
 
-const _today = new Date();
-const _y = _today.getFullYear();
-const _m = String(_today.getMonth() + 1).padStart(2, '0');
-
-const MOCK_BOOKINGS: HolidayBooking[] = [
-  { id: '1', userId: 'mock-1', checkIn: `${_y}-${_m}-05`, checkOut: `${_y}-${_m}-09`, note: 'Bringing the dog 🐕' },
-  { id: '2', userId: 'mock-2', checkIn: `${_y}-${_m}-15`, checkOut: `${_y}-${_m}-18` },
-  { id: '3', userId: 'mock-3', checkIn: `${_y}-${_m}-22`, checkOut: `${_y}-${_m}-26`, note: 'Birthday week 🎉' },
-];
-
-const MOCK_PROFILES: HolidayProfile[] = [
-  { id: 'mock-1', display_name: 'Koen', avatar_url: null },
-  { id: 'mock-2', display_name: 'Emma', avatar_url: null },
-  { id: 'mock-3', display_name: 'Lars',  avatar_url: null },
-];
-
-const MOCK_MEMBERS: HolidayMemberInfo[] = [
-  { userId: 'mock-1', displayName: 'Koen', avatarUrl: null },
-  { userId: 'mock-2', displayName: 'Emma', avatarUrl: null },
-  { userId: 'mock-3', displayName: 'Lars',  avatarUrl: null },
-];
+const BAND_STYLE = {
+  background:   'linear-gradient(191deg, #F7F7F7 0%, #F0F0F0 100%)',
+  borderTop:    '1px solid #EEE',
+  borderBottom: '1px solid #EEE',
+};
 
 // ── Helpers ───────────────────────────────────────────────────
-
-const BOOKING_COLORS = [
-  { bg: '#DBEAFE', border: '#93C5FD', text: '#1D4ED8' },
-  { bg: '#EDE9FE', border: '#C4B5FD', text: '#6D28D9' },
-  { bg: '#D1FAE5', border: '#6EE7B7', text: '#065F46' },
-  { bg: '#FEF3C7', border: '#FCD34D', text: '#92400E' },
-  { bg: '#FCE7F3', border: '#F9A8D4', text: '#9D174D' },
-  { bg: '#CFFAFE', border: '#67E8F9', text: '#155E75' },
-];
 
 const AVATAR_COLORS = [
   'bg-blue-500', 'bg-violet-500', 'bg-emerald-500',
@@ -87,12 +63,6 @@ function avatarColorClass(userId: string): string {
   let n = 0;
   for (const c of userId) n += c.charCodeAt(0);
   return AVATAR_COLORS[n % AVATAR_COLORS.length];
-}
-
-function bookingColor(userId: string) {
-  let n = 0;
-  for (const c of userId) n += c.charCodeAt(0);
-  return BOOKING_COLORS[n % BOOKING_COLORS.length];
 }
 
 function getInitials(name: string | null, fallback: string): string {
@@ -152,18 +122,20 @@ type ModalState =
   | { mode: 'existing'; booking: HolidayBooking };
 
 function HolidayModal({
-  modal, userId, profiles, onClose,
+  modal, userId, spaceId, profiles, onBooked, onCancelled, onClose,
 }: {
-  modal:    ModalState;
-  userId:   string;
-  profiles: HolidayProfile[];
-  onClose:  () => void;
+  modal:        ModalState;
+  userId:       string;
+  spaceId:      string;
+  profiles:     HolidayProfile[];
+  onBooked:     (booking: HolidayBooking) => void;
+  onCancelled:  (id: string) => void;
+  onClose:      () => void;
 }) {
-  const isNew      = modal.mode === 'new';
-  const existing   = isNew ? null : modal.booking;
-  const isMine     = existing?.userId === userId;
-  const profile    = existing ? profiles.find(p => p.id === existing.userId) : null;
-  const color      = existing ? bookingColor(existing.userId) : null;
+  const isNew    = modal.mode === 'new';
+  const existing = isNew ? null : modal.booking;
+  const isMine   = existing?.userId === userId;
+  const profile  = existing ? profiles.find(p => p.id === existing.userId) : null;
 
   const [checkIn,  setCheckIn]  = useState(isNew ? modal.checkIn : existing!.checkIn);
   const [checkOut, setCheckOut] = useState(isNew ? modal.checkIn : existing!.checkOut);
@@ -171,32 +143,30 @@ function HolidayModal({
   const [pending,  setPending]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
 
-  // Night count
   const nights = Math.max(0, Math.round(
     (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
   )) + 1;
 
-  const checkInLabel = new Date(checkIn + 'T12:00:00').toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long',
-  });
-  const checkOutLabel = new Date(checkOut + 'T12:00:00').toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long',
-  });
+  const checkInLabel  = new Date(checkIn  + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const checkOutLabel = new Date(checkOut + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
   async function handleBook() {
     if (checkOut < checkIn) { setError('Check-out must be after check-in.'); return; }
     setPending(true); setError(null);
-    // TODO: wire to server action
-    console.log('Booking:', checkIn, '→', checkOut, note);
+    const r = await createHolidayBooking(spaceId, checkIn, checkOut, note);
     setPending(false);
+    if (!r.success) { setError(r.error); return; }
+    onBooked({ id: r.id, userId, checkIn, checkOut, note: note.trim() || null });
     onClose();
   }
 
   async function handleCancel() {
+    if (!existing) return;
     setPending(true);
-    // TODO: wire to server action
-    console.log('Cancel booking:', existing?.id);
+    const r = await cancelHolidayBooking(existing.id);
     setPending(false);
+    if (!r.success) { setError(r.error); return; }
+    onCancelled(existing.id);
     onClose();
   }
 
@@ -219,10 +189,7 @@ function HolidayModal({
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden"
-              style={{ backgroundColor: color!.text }}
-            >
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden ${profile?.avatar_url ? '' : avatarColorClass(existing!.userId)}`}>
               {profile?.avatar_url
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -262,11 +229,13 @@ function HolidayModal({
               </div>
             </div>
             <p className="text-sm text-gray-400 text-center">
-              {checkOut >= checkIn ? <><strong className="text-gray-700">{nights}</strong> night{nights !== 1 ? 's' : ''}</> : null}
+              {checkOut >= checkIn
+                ? <><strong className="text-gray-700">{nights}</strong> night{nights !== 1 ? 's' : ''}</>
+                : null}
             </p>
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-2xl p-4 space-y-1">
+          <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Check-in</span>
               <span className="font-medium text-gray-900">{checkInLabel}</span>
@@ -275,7 +244,7 @@ function HolidayModal({
               <span className="text-gray-400">Check-out</span>
               <span className="font-medium text-gray-900">{checkOutLabel}</span>
             </div>
-            <div className="flex justify-between text-sm pt-1 border-t border-gray-200 mt-1">
+            <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
               <span className="text-gray-400">Duration</span>
               <span className="font-medium text-gray-900">{nights} night{nights !== 1 ? 's' : ''}</span>
             </div>
@@ -293,7 +262,6 @@ function HolidayModal({
               onChange={e => setNote(e.target.value)}
               placeholder="Bringing the dog 🐕, Birthday week 🎉…"
               rows={2}
-              readOnly={!isNew && !isMine}
               className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
             />
           ) : (
@@ -337,47 +305,41 @@ function HolidayModal({
 
 export default function HolidayCalendar({
   userId, spaceId, spaceSlug, isAdmin,
-  bookings: bookingsProp,
-  profiles: profilesProp,
+  bookings: initialBookings,
+  profiles,
   spaceInfo,
-  membersList: membersListProp,
+  membersList,
 }: Props) {
-  const activeBookings = bookingsProp.length > 0 ? bookingsProp : MOCK_BOOKINGS;
-  const activeProfiles = profilesProp.length > 0 ? profilesProp : MOCK_PROFILES;
-  const activeMembers  = membersListProp.length > 0 ? membersListProp : MOCK_MEMBERS;
-
+  const [bookings,     setBookings]     = useState(initialBookings);
   const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
-  const [hoverDate,    setHoverDate]    = useState<string | null>(null);
   const [modal,        setModal]        = useState<ModalState | null>(null);
-  const [tooltip,      setTooltip]      = useState<HolidayBooking | null>(null);
 
-  const todayStr = toDateStr(new Date());
-  const cells    = buildMonthGrid(currentMonth);
-
+  const todayStr    = toDateStr(new Date());
+  const cells       = buildMonthGrid(currentMonth);
   const periodLabel = currentMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
   function findBooking(ds: string) {
-    return activeBookings.find(b => b.checkIn <= ds && ds <= b.checkOut);
+    return bookings.find(b => b.checkIn <= ds && ds <= b.checkOut);
   }
 
-  function handleDayClick(ds: string) {
-    const booking = findBooking(ds);
-    if (booking) {
-      setModal({ mode: 'existing', booking });
-    } else {
-      setModal({ mode: 'new', checkIn: ds });
-    }
+  function handleBooked(booking: HolidayBooking) {
+    setBookings(prev => [...prev, booking]);
   }
 
-  // Nights booked this year per member
+  function handleCancelled(id: string) {
+    setBookings(prev => prev.filter(b => b.id !== id));
+  }
+
+  // Nights used this year per member
   const yearStr = String(new Date().getFullYear());
   function getNightsUsed(memberId: string): number {
-    return activeBookings
+    return bookings
       .filter(b => b.userId === memberId && b.checkIn.startsWith(yearStr))
       .reduce((sum, b) => {
-        const ci = new Date(b.checkIn);
-        const co = new Date(b.checkOut);
-        return sum + Math.round((co.getTime() - ci.getTime()) / 86400000) + 1;
+        const nights = Math.round(
+          (new Date(b.checkOut).getTime() - new Date(b.checkIn).getTime()) / 86400000
+        ) + 1;
+        return sum + nights;
       }, 0);
   }
 
@@ -400,14 +362,12 @@ export default function HolidayCalendar({
             >›</button>
             <h2 className="text-base font-semibold text-gray-900 ml-1">{periodLabel}</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentMonth(() => { const d = new Date(); d.setDate(1); return d; })}
-              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
-            >
-              Today
-            </button>
-          </div>
+          <button
+            onClick={() => setCurrentMonth(() => { const d = new Date(); d.setDate(1); return d; })}
+            className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
+          >
+            Today
+          </button>
         </div>
 
         {/* Month grid */}
@@ -422,7 +382,7 @@ export default function HolidayCalendar({
             ))}
           </div>
 
-          {/* Grid cells — fills remaining height */}
+          {/* Grid cells */}
           <div className="flex-1 grid grid-cols-7 min-h-0" style={{ gridTemplateRows: `repeat(${cells.length / 7}, 1fr)` }}>
             {cells.map((date, i) => {
               if (!date) return <div key={`empty-${i}`} className="border-b border-r border-gray-50" />;
@@ -434,10 +394,9 @@ export default function HolidayCalendar({
               const isMid    = !!(booking && !isCI && !isCO);
               const isSingle = !!(booking && booking.checkIn === booking.checkOut);
               const isToday  = ds === todayStr;
-              const color    = booking ? bookingColor(booking.userId) : null;
-              const profile  = booking ? activeProfiles.find(p => p.id === booking.userId) : null;
+              const profile  = booking ? profiles.find(p => p.id === booking.userId) : null;
 
-              // Band border-radius effect
+              // Band border-radius — same as slot cell selected state
               let borderRadius = '10px';
               if (booking && !isSingle) {
                 if (isCI)      borderRadius = '10px 0 0 10px';
@@ -446,21 +405,17 @@ export default function HolidayCalendar({
               }
 
               const bandStyle: React.CSSProperties = booking ? {
+                ...BAND_STYLE,
                 borderRadius,
-                backgroundColor: color!.bg,
-                borderTop:    `1.5px solid ${color!.border}`,
-                borderBottom: `1.5px solid ${color!.border}`,
-                borderLeft:   (!isMid && !isCO) ? `1.5px solid ${color!.border}` : 'none',
-                borderRight:  (!isMid && !isCI) ? `1.5px solid ${color!.border}` : 'none',
+                borderLeft:  (!isMid && !isCO) ? '1px solid #EEE' : 'none',
+                borderRight: (!isMid && !isCI) ? '1px solid #EEE' : 'none',
               } : {};
 
               return (
                 <div
                   key={ds}
                   className="relative p-2 flex flex-col border-b border-r border-gray-50 transition-colors cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleDayClick(ds)}
-                  onMouseEnter={() => { setHoverDate(ds); if (booking) setTooltip(booking); }}
-                  onMouseLeave={() => { setHoverDate(null); setTooltip(null); }}
+                  onClick={() => setModal(booking ? { mode: 'existing', booking } : { mode: 'new', checkIn: ds })}
                 >
                   {/* Date number */}
                   <div className="flex items-center gap-1.5 mb-1.5">
@@ -476,25 +431,20 @@ export default function HolidayCalendar({
                       className="absolute left-0 right-0 flex items-center px-2"
                       style={{ ...bandStyle, top: '2rem', height: '2rem' }}
                     >
-                      {/* Avatar on check-in */}
                       {isCI && (
-                        <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white overflow-hidden shrink-0 mr-1.5"
-                          style={{ backgroundColor: color!.text }}
-                        >
-                          {profile?.avatar_url
-                            // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                            : getInitials(profile?.display_name ?? null, booking.userId)
-                          }
-                        </div>
-                      )}
-                      {/* Name + note icon on check-in */}
-                      {isCI && (
-                        <span className="text-xs font-medium truncate" style={{ color: color!.text }}>
-                          {profile?.display_name?.split(' ')[0] ?? ''}
-                          {booking.note ? ' 💬' : ''}
-                        </span>
+                        <>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white overflow-hidden shrink-0 mr-1.5 ${profile?.avatar_url ? '' : avatarColorClass(booking.userId)}`}>
+                            {profile?.avatar_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                              : getInitials(profile?.display_name ?? null, booking.userId)
+                            }
+                          </div>
+                          <span className="text-xs font-medium text-gray-700 truncate">
+                            {profile?.display_name?.split(' ')[0] ?? ''}
+                            {booking.note ? ' 💬' : ''}
+                          </span>
+                        </>
                       )}
                     </div>
                   )}
@@ -507,8 +457,6 @@ export default function HolidayCalendar({
 
       {/* ── Side panel ───────────────────────────────────────── */}
       <div className="w-72 xl:w-80 flex-shrink-0 bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden">
-
-        {/* Top: scrollable space info */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <div>
             {spaceInfo.heroImageUrl && (
@@ -534,8 +482,7 @@ export default function HolidayCalendar({
                 <p className="text-sm text-gray-700 whitespace-pre-line leading-snug">{spaceInfo.address}</p>
                 <a
                   href={`https://maps.google.com/maps?q=${encodeURIComponent(spaceInfo.address.replace(/\n/g, ', '))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_blank" rel="noopener noreferrer"
                   className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
                 >
                   View on map →
@@ -545,28 +492,23 @@ export default function HolidayCalendar({
           )}
         </div>
 
-        {/* Bottom: members + invite */}
         <div>
           <hr className="border-gray-100 mx-5" />
           <div className="p-5 space-y-4">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Members</p>
             <div className="space-y-3">
-              {activeMembers.map(m => {
-                const nights   = getNightsUsed(m.userId);
-                const initials = getInitials(m.displayName, m.userId);
-                return (
-                  <div key={m.userId} className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0 overflow-hidden ${m.avatarUrl ? '' : avatarColorClass(m.userId)}`}>
-                      {m.avatarUrl
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={m.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        : initials}
-                    </div>
-                    <span className="flex-1 text-sm font-medium text-gray-800 truncate">{m.displayName ?? 'Unknown'}</span>
-                    <span className="text-xs text-gray-400 tabular-nums shrink-0">{nights}n this year</span>
+              {membersList.map(m => (
+                <div key={m.userId} className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0 overflow-hidden ${m.avatarUrl ? '' : avatarColorClass(m.userId)}`}>
+                    {m.avatarUrl
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={m.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      : getInitials(m.displayName, m.userId)}
                   </div>
-                );
-              })}
+                  <span className="flex-1 text-sm font-medium text-gray-800 truncate">{m.displayName ?? 'Unknown'}</span>
+                  <span className="text-xs text-gray-400 tabular-nums shrink-0">{getNightsUsed(m.userId)}n this year</span>
+                </div>
+              ))}
             </div>
           </div>
           <div className="px-5 pb-5">
@@ -579,7 +521,10 @@ export default function HolidayCalendar({
         <HolidayModal
           modal={modal}
           userId={userId}
-          profiles={activeProfiles}
+          spaceId={spaceId}
+          profiles={profiles}
+          onBooked={handleBooked}
+          onCancelled={handleCancelled}
           onClose={() => setModal(null)}
         />
       )}
