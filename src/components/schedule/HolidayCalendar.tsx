@@ -145,6 +145,194 @@ function InviteCopyButton({ spaceId }: { spaceId: string }) {
   );
 }
 
+// ── HolidayModal ─────────────────────────────────────────────
+
+type ModalState =
+  | { mode: 'new';      checkIn: string }
+  | { mode: 'existing'; booking: HolidayBooking };
+
+function HolidayModal({
+  modal, userId, profiles, onClose,
+}: {
+  modal:    ModalState;
+  userId:   string;
+  profiles: HolidayProfile[];
+  onClose:  () => void;
+}) {
+  const isNew      = modal.mode === 'new';
+  const existing   = isNew ? null : modal.booking;
+  const isMine     = existing?.userId === userId;
+  const profile    = existing ? profiles.find(p => p.id === existing.userId) : null;
+  const color      = existing ? bookingColor(existing.userId) : null;
+
+  const [checkIn,  setCheckIn]  = useState(isNew ? modal.checkIn : existing!.checkIn);
+  const [checkOut, setCheckOut] = useState(isNew ? modal.checkIn : existing!.checkOut);
+  const [note,     setNote]     = useState(isNew ? '' : (existing?.note ?? ''));
+  const [pending,  setPending]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+
+  // Night count
+  const nights = Math.max(0, Math.round(
+    (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
+  )) + 1;
+
+  const checkInLabel = new Date(checkIn + 'T12:00:00').toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  });
+  const checkOutLabel = new Date(checkOut + 'T12:00:00').toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  });
+
+  async function handleBook() {
+    if (checkOut < checkIn) { setError('Check-out must be after check-in.'); return; }
+    setPending(true); setError(null);
+    // TODO: wire to server action
+    console.log('Booking:', checkIn, '→', checkOut, note);
+    setPending(false);
+    onClose();
+  }
+
+  async function handleCancel() {
+    setPending(true);
+    // TODO: wire to server action
+    console.log('Cancel booking:', existing?.id);
+    setPending(false);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div
+        className="relative z-10 w-full sm:max-w-sm bg-white border border-gray-200 shadow-xl
+                   rounded-t-3xl sm:rounded-3xl p-6 space-y-5
+                   animate-in fade-in slide-in-from-bottom-4 duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto -mt-1 mb-1" />
+
+        {/* Header */}
+        {isNew ? (
+          <div>
+            <p className="text-xs text-gray-400 uppercase tracking-widest">New booking</p>
+            <h2 className="text-2xl font-bold text-gray-900 mt-0.5">Choose your dates</h2>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden"
+              style={{ backgroundColor: color!.text }}
+            >
+              {profile?.avatar_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                : getInitials(profile?.display_name ?? null, existing!.userId)
+              }
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-widest">Booked by</p>
+              <h2 className="text-xl font-bold text-gray-900">{profile?.display_name ?? 'Member'}</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Date range */}
+        {isNew ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Check-in</label>
+                <input
+                  type="date"
+                  value={checkIn}
+                  min={toDateStr(new Date())}
+                  onChange={e => { setCheckIn(e.target.value); if (e.target.value > checkOut) setCheckOut(e.target.value); }}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 transition-colors"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Check-out</label>
+                <input
+                  type="date"
+                  value={checkOut}
+                  min={checkIn}
+                  onChange={e => setCheckOut(e.target.value)}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 transition-colors"
+                />
+              </div>
+            </div>
+            <p className="text-sm text-gray-400 text-center">
+              {checkOut >= checkIn ? <><strong className="text-gray-700">{nights}</strong> night{nights !== 1 ? 's' : ''}</> : null}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-gray-50 rounded-2xl p-4 space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Check-in</span>
+              <span className="font-medium text-gray-900">{checkInLabel}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Check-out</span>
+              <span className="font-medium text-gray-900">{checkOutLabel}</span>
+            </div>
+            <div className="flex justify-between text-sm pt-1 border-t border-gray-200 mt-1">
+              <span className="text-gray-400">Duration</span>
+              <span className="font-medium text-gray-900">{nights} night{nights !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Note */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">
+            {isNew ? 'Leave a note' : 'Note'}
+          </label>
+          {isNew || isMine ? (
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Bringing the dog 🐕, Birthday week 🎉…"
+              rows={2}
+              readOnly={!isNew && !isMine}
+              className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
+            />
+          ) : (
+            existing?.note
+              ? <p className="text-sm text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5">{existing.note}</p>
+              : <p className="text-sm text-gray-300 italic">No note left.</p>
+          )}
+        </div>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        {/* Actions */}
+        <div className="space-y-2">
+          {isNew ? (
+            <button
+              onClick={handleBook}
+              disabled={pending || checkOut < checkIn}
+              className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-base"
+            >
+              {pending ? 'Booking…' : `Book · ${nights} night${nights !== 1 ? 's' : ''}`}
+            </button>
+          ) : isMine ? (
+            <button
+              onClick={handleCancel}
+              disabled={pending}
+              className="w-full py-4 rounded-2xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors font-semibold"
+            >
+              {pending ? 'Cancelling…' : 'Cancel booking'}
+            </button>
+          ) : null}
+          <button onClick={onClose} className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────
 
 export default function HolidayCalendar({
@@ -158,10 +346,10 @@ export default function HolidayCalendar({
   const activeProfiles = profilesProp.length > 0 ? profilesProp : MOCK_PROFILES;
   const activeMembers  = membersListProp.length > 0 ? membersListProp : MOCK_MEMBERS;
 
-  const [currentMonth,    setCurrentMonth]    = useState(() => { const d = new Date(); d.setDate(1); return d; });
-  const [selectingCheckIn, setSelectingCheckIn] = useState<string | null>(null);
-  const [hoverDate,        setHoverDate]        = useState<string | null>(null);
-  const [tooltip,          setTooltip]          = useState<HolidayBooking | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+  const [hoverDate,    setHoverDate]    = useState<string | null>(null);
+  const [modal,        setModal]        = useState<ModalState | null>(null);
+  const [tooltip,      setTooltip]      = useState<HolidayBooking | null>(null);
 
   const todayStr = toDateStr(new Date());
   const cells    = buildMonthGrid(currentMonth);
@@ -172,26 +360,12 @@ export default function HolidayCalendar({
     return activeBookings.find(b => b.checkIn <= ds && ds <= b.checkOut);
   }
 
-  function isInPreview(ds: string) {
-    if (!selectingCheckIn || !hoverDate) return false;
-    const lo = selectingCheckIn < hoverDate ? selectingCheckIn : hoverDate;
-    const hi = selectingCheckIn > hoverDate ? selectingCheckIn : hoverDate;
-    return lo <= ds && ds <= hi;
-  }
-
   function handleDayClick(ds: string) {
-    if (findBooking(ds) && !selectingCheckIn) return;
-    if (!selectingCheckIn) {
-      setSelectingCheckIn(ds);
+    const booking = findBooking(ds);
+    if (booking) {
+      setModal({ mode: 'existing', booking });
     } else {
-      if (ds >= selectingCheckIn) {
-        // TODO: wire to server action
-        console.log('Book:', selectingCheckIn, '→', ds);
-        setSelectingCheckIn(null);
-        setHoverDate(null);
-      } else {
-        setSelectingCheckIn(ds);
-      }
+      setModal({ mode: 'new', checkIn: ds });
     }
   }
 
@@ -233,12 +407,6 @@ export default function HolidayCalendar({
             >
               Today
             </button>
-            {selectingCheckIn && (
-              <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl px-3 py-1.5 text-xs text-gray-600">
-                <span>Check-in: <strong>{selectingCheckIn}</strong></span>
-                <button onClick={() => { setSelectingCheckIn(null); setHoverDate(null); }} className="text-gray-400 hover:text-gray-700 ml-1">✕</button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -265,7 +433,6 @@ export default function HolidayCalendar({
               const isCO     = booking?.checkOut === ds;
               const isMid    = !!(booking && !isCI && !isCO);
               const isSingle = !!(booking && booking.checkIn === booking.checkOut);
-              const inPreview = !booking && isInPreview(ds);
               const isToday  = ds === todayStr;
               const color    = booking ? bookingColor(booking.userId) : null;
               const profile  = booking ? activeProfiles.find(p => p.id === booking.userId) : null;
@@ -290,9 +457,7 @@ export default function HolidayCalendar({
               return (
                 <div
                   key={ds}
-                  className={`relative p-2 flex flex-col border-b border-r border-gray-50 transition-colors
-                    ${!booking ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'}
-                  `}
+                  className="relative p-2 flex flex-col border-b border-r border-gray-50 transition-colors cursor-pointer hover:bg-gray-50"
                   onClick={() => handleDayClick(ds)}
                   onMouseEnter={() => { setHoverDate(ds); if (booking) setTooltip(booking); }}
                   onMouseLeave={() => { setHoverDate(null); setTooltip(null); }}
@@ -304,11 +469,6 @@ export default function HolidayCalendar({
                     </span>
                     {isToday && <div className="w-1.5 h-1.5 rounded-full bg-gray-800" />}
                   </div>
-
-                  {/* Preview highlight */}
-                  {inPreview && (
-                    <div className="absolute inset-x-0 inset-y-8 bg-gray-100 rounded-lg mx-1" />
-                  )}
 
                   {/* Booking band */}
                   {booking && (
@@ -415,18 +575,13 @@ export default function HolidayCalendar({
         </div>
       </div>
 
-      {/* Tooltip */}
-      {tooltip && (
-        <div
-          className="fixed z-50 bg-white border border-gray-200 rounded-2xl p-4 shadow-lg text-sm pointer-events-none"
-          style={{ bottom: '32px', right: '320px' }}
-        >
-          <p className="font-semibold text-gray-900">
-            {activeProfiles.find(p => p.id === tooltip.userId)?.display_name ?? 'Member'}
-          </p>
-          <p className="text-gray-400 text-xs mt-0.5">{tooltip.checkIn} → {tooltip.checkOut}</p>
-          {tooltip.note && <p className="text-gray-500 mt-2 text-xs">{tooltip.note}</p>}
-        </div>
+      {modal && (
+        <HolidayModal
+          modal={modal}
+          userId={userId}
+          profiles={activeProfiles}
+          onClose={() => setModal(null)}
+        />
       )}
     </div>
   );
