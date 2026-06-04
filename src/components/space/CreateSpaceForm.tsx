@@ -2,6 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { createSpace } from '@/lib/actions/space';
+import Button from '@/components/ui/Button';
+import { Input, Textarea } from '@/components/ui/Input';
+import Label from '@/components/ui/Label';
 
 // Derives a URL-safe slug from a plain-text name as the user types.
 function toSlug(name: string): string {
@@ -50,39 +53,29 @@ export default function CreateSpaceForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {/* Name */}
-      <div className="space-y-2">
-        <label className="block text-sm text-neutral-400" htmlFor="name">
-          Space name
-        </label>
-        <input
+      <div className="space-y-1.5">
+        <Label htmlFor="name">Space name</Label>
+        <Input
           id="name"
           type="text"
           required
           value={name}
           onChange={e => handleNameChange(e.target.value)}
           placeholder="Otis Studio Collectief"
-          className={`w-full rounded-md border px-3 py-2 text-sm text-neutral-100
-                      bg-neutral-900 placeholder-neutral-600 focus:outline-none
-                      ${fieldError === 'name'
-                        ? 'border-red-500'
-                        : 'border-neutral-700 focus:border-neutral-500'}`}
+          className={fieldError === 'name' ? 'border-red-400 focus:border-red-400' : ''}
         />
         {fieldError === 'name' && error && (
-          <p className="text-xs text-red-400">{error}</p>
+          <p className="text-xs text-red-500">{error}</p>
         )}
       </div>
 
       {/* Slug */}
-      <div className="space-y-2">
-        <label className="block text-sm text-neutral-400" htmlFor="slug">
-          URL
-        </label>
-        <div className="flex items-center gap-0 rounded-md border border-neutral-700
-                        bg-neutral-900 focus-within:border-neutral-500 overflow-hidden
-                        ${fieldError === 'slug' ? 'border-red-500' : ''}">
-          <span className="px-3 py-2 text-sm text-neutral-600 border-r border-neutral-700 shrink-0">
+      <div className="space-y-1.5">
+        <Label htmlFor="slug">URL</Label>
+        <div className={`flex items-center rounded-2xl border bg-white overflow-hidden transition-colors focus-within:border-gray-400 ${fieldError === 'slug' ? 'border-red-400' : 'border-gray-200'}`}>
+          <span className="px-4 py-4 text-sm text-gray-400 border-r border-gray-200 shrink-0 bg-gray-50">
             /space/
           </span>
           <input
@@ -92,49 +85,45 @@ export default function CreateSpaceForm() {
             value={slug}
             onChange={e => handleSlugChange(e.target.value)}
             placeholder="otis-studio"
-            className="flex-1 bg-transparent px-3 py-2 text-sm text-neutral-100
-                       placeholder-neutral-600 focus:outline-none"
+            className="flex-1 bg-transparent px-4 py-4 text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
           />
         </div>
         {fieldError === 'slug' && error ? (
-          <p className="text-xs text-red-400">{error}</p>
+          <p className="text-xs text-red-500">{error}</p>
         ) : (
-          <p className="text-xs text-neutral-600">
+          <p className="text-xs text-gray-400">
             Lowercase letters, numbers, and hyphens only.
           </p>
         )}
       </div>
 
       {/* Description */}
-      <div className="space-y-2">
-        <label className="block text-sm text-neutral-400" htmlFor="description">
-          Description <span className="text-neutral-600">(optional)</span>
-        </label>
-        <textarea
+      <div className="space-y-1.5">
+        <Label htmlFor="description">
+          Description <span className="font-normal text-gray-400">(optional)</span>
+        </Label>
+        <Textarea
           id="description"
           rows={2}
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="A short description your members will see."
-          className="w-full rounded-md border border-neutral-700 bg-neutral-900
-                     px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600
-                     focus:border-neutral-500 focus:outline-none resize-none"
         />
       </div>
 
       {/* Generic error (not tied to a field) */}
       {error && !fieldError && (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-red-500">{error}</p>
       )}
 
-      <button
+      <Button
         type="submit"
+        variant="primary"
+        size="lg"
         disabled={isPending || !name.trim() || !slug.trim()}
-        className="w-full rounded-md bg-neutral-100 px-4 py-2 text-sm font-semibold
-                   text-neutral-900 hover:bg-white disabled:opacity-50 transition-colors"
       >
         {isPending ? 'Creating…' : 'Create Space'}
-      </button>
+      </Button>
     </form>
   );
 }
