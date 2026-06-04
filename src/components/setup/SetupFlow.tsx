@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveSpaceDetails, saveAvailability, completeOnboarding, saveSpaceType, saveHolidayRules } from '@/lib/actions/setup';
-import type { Space, CalendarView } from '@/types';
+import type { Space } from '@/types';
 import Button from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 
@@ -17,12 +17,6 @@ const DAYS = [
   { label: 'Su', value: 0 },
 ];
 
-const VIEWS: { label: string; value: CalendarView; sub: string }[] = [
-  { label: 'Day',   value: 'daily',   sub: 'Ideal for busy studios' },
-  { label: 'Week',  value: 'weekly',  sub: 'Most popular' },
-  { label: 'Month', value: 'monthly', sub: 'Great for planning ahead' },
-  { label: 'Year',  value: 'yearly',  sub: 'Full overview' },
-];
 
 interface Props { space: Space }
 
@@ -37,8 +31,8 @@ export default function SetupFlow({ space }: Props) {
   const [name, setName]        = useState(space.name);
   const [description, setDesc] = useState(space.description ?? '');
 
-  const [days, setDays] = useState<number[]>([1, 3, 5]);
-  const [view, setView] = useState<CalendarView>('weekly');
+  const [days,         setDays]         = useState<number[]>([1, 3, 5]);
+  const [hoursPerWeek, setHoursPerWeek] = useState(40);
 
   // Holiday home rules
   const [nightsPerYear,  setNightsPerYear]  = useState(30);
@@ -85,7 +79,7 @@ export default function SetupFlow({ space }: Props) {
         const r = await saveHolidayRules(space.id, nightsPerYear, maxConsecutive, advanceDays);
         if (!r.success) { setError(r.error); return; }
       } else {
-        const r = await saveAvailability(space.id, name, days, view, 10, 1);
+        const r = await saveAvailability(space.id, name, days, hoursPerWeek, 10, 1);
         if (!r.success) { setError(r.error); return; }
       }
       setStep(3);
@@ -190,43 +184,39 @@ export default function SetupFlow({ space }: Props) {
           </div>
         )}
 
-        {/* ── Step 2 ── */}
+        {/* ── Step 2 (workplace / studio) ── */}
         {step === 2 && spaceType !== 'holiday_home' && (
           <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest text-gray-400">Step 2 of 3</p>
-              <h1 className="text-4xl font-bold text-gray-900 leading-tight">When is {name} available?</h1>
-              <p className="text-gray-400">Set recurring days and times.</p>
+              <h1 className="text-4xl font-bold text-gray-900 leading-tight">Set the rules for {name}</h1>
+              <p className="text-gray-400">These keep things fair for everyone.</p>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600 font-medium">Days</p>
-              <div className="grid grid-cols-7 gap-2">
-                {DAYS.map(d => (
-                  <button key={d.value} type="button" onClick={() => toggleDay(d.value)}
-                    className={`aspect-square rounded-xl text-sm font-semibold transition-all
-                      ${days.includes(d.value)
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}>
-                    {d.label}
-                  </button>
-                ))}
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 font-medium">Open days</p>
+                <div className="grid grid-cols-7 gap-2">
+                  {DAYS.map(d => (
+                    <button key={d.value} type="button" onClick={() => toggleDay(d.value)}
+                      className={`aspect-square rounded-xl text-sm font-semibold transition-all
+                        ${days.includes(d.value)
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}>
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600 font-medium">Default calendar view</p>
-              <div className="grid grid-cols-2 gap-3">
-                {VIEWS.map(v => (
-                  <button key={v.value} type="button" onClick={() => setView(v.value)}
-                    className={`rounded-2xl p-5 text-left transition-all border
-                      ${view === v.value
-                        ? 'bg-gray-900 text-white border-gray-900'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'}`}>
-                    <p className="text-lg font-semibold">{v.label}</p>
-                    <p className={`text-xs mt-0.5 ${view === v.value ? 'text-gray-400' : 'text-gray-400'}`}>{v.sub}</p>
-                  </button>
-                ))}
+              <div className="space-y-2">
+                <label className="text-sm text-gray-600 font-medium">Hours per week per member</label>
+                <Input
+                  type="number"
+                  value={hoursPerWeek}
+                  onChange={e => setHoursPerWeek(Number(e.target.value))}
+                  min={1}
+                />
               </div>
             </div>
 

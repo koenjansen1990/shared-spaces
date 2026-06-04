@@ -1,7 +1,6 @@
 'use server';
 
 import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/supabase/server';
-import type { CalendarView } from '@/types';
 
 // Step 1: save space name + description
 export async function saveSpaceDetails(spaceId: string, name: string, description: string) {
@@ -26,12 +25,12 @@ const ALL_SLOT_TIMES = [
 
 // Step 2: save availability + view preference
 export async function saveAvailability(
-  spaceId:   string,
-  spaceName: string,
-  days:      number[],
-  view:      CalendarView,
-  capacity:  number,
-  credits:   number,
+  spaceId:      string,
+  spaceName:    string,
+  days:         number[],
+  hoursPerWeek: number,
+  capacity:     number,
+  credits:      number,
 ) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -39,8 +38,17 @@ export async function saveAvailability(
 
   const service = createSupabaseServiceClient();
 
-  // Save view preference
-  await service.from('spaces').update({ default_view: view }).eq('id', spaceId);
+  // Save weekly credit allowance on the owner's membership + space_rules
+  await service.from('space_members')
+    .update({ weekly_credit_allowance: hoursPerWeek })
+    .eq('space_id', spaceId)
+    .eq('user_id', user.id);
+
+  await service.from('space_rules')
+    .upsert(
+      { space_id: spaceId, rule_type: 'default_member_hours', rule_value: hoursPerWeek },
+      { onConflict: 'space_id,rule_type' },
+    );
 
   // Create or reuse the default resource
   const { data: existing } = await service
