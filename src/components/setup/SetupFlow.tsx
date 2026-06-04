@@ -22,11 +22,12 @@ interface Props { space: Space }
 
 export default function SetupFlow({ space }: Props) {
   const router = useRouter();
-  const [step, setStep]              = useState(0);
   const [isPending, startTransition] = useTransition();
   const [error, setError]            = useState<string | null>(null);
 
-  const [spaceType, setSpaceType] = useState<'workplace' | 'holiday_home' | null>(null);
+  const existingType = (space as any).space_type as 'workplace' | 'holiday_home' | null ?? null;
+  const [spaceType, setSpaceType] = useState<'workplace' | 'holiday_home' | null>(existingType);
+  const [step, setStep]              = useState(existingType ? 1 : 0);
 
   const [name, setName]        = useState(space.name);
   const [description, setDesc] = useState(space.description ?? '');
