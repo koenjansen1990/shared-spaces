@@ -127,6 +127,8 @@ export default async function SchedulePage({ params }: Props) {
           profiles={(profilesData ?? []) as any}
           isAdmin={isAdmin}
           spaceSlug={slug}
+          spaceInfo={spaceInfo}
+          membersList={membersList.map(m => ({ userId: m.userId, displayName: m.displayName, avatarUrl: m.avatarUrl }))}
         />
       ) : (
         <WeeklyCalendar

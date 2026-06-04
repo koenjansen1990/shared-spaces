@@ -1,40 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { generateInviteLink } from '@/lib/actions/profile';
 
-interface HolidayBooking {
+// ── Types ─────────────────────────────────────────────────────
+
+export interface HolidayBooking {
   id:       string;
   userId:   string;
   checkIn:  string; // 'YYYY-MM-DD'
-  checkOut: string; // 'YYYY-MM-DD' (inclusive last night = day before checkout)
+  checkOut: string; // 'YYYY-MM-DD' inclusive
   note?:    string | null;
 }
 
-interface HolidayProfile {
+export interface HolidayProfile {
   id:           string;
   display_name: string | null;
   avatar_url:   string | null;
 }
 
-interface Props {
-  userId:    string;
-  spaceId:   string;
-  bookings:  HolidayBooking[];
-  profiles:  HolidayProfile[];
-  isAdmin:   boolean;
-  spaceSlug: string;
+export interface HolidaySpaceInfo {
+  name:           string;
+  welcomeMessage: string | null;
+  address:        string | null;
+  heroImageUrl:   string | null;
 }
 
-// ── Mock data ────────────────────────────────────────────────
+export interface HolidayMemberInfo {
+  userId:      string;
+  displayName: string | null;
+  avatarUrl:   string | null;
+}
 
-const today = new Date();
-const y = today.getFullYear();
-const m = String(today.getMonth() + 1).padStart(2, '0');
+interface Props {
+  userId:      string;
+  spaceId:     string;
+  spaceSlug:   string;
+  isAdmin:     boolean;
+  bookings:    HolidayBooking[];
+  profiles:    HolidayProfile[];
+  spaceInfo:   HolidaySpaceInfo;
+  membersList: HolidayMemberInfo[];
+}
+
+// ── Mock data ─────────────────────────────────────────────────
+
+const _today = new Date();
+const _y = _today.getFullYear();
+const _m = String(_today.getMonth() + 1).padStart(2, '0');
 
 const MOCK_BOOKINGS: HolidayBooking[] = [
-  { id: '1', userId: 'mock-1', checkIn: `${y}-${m}-05`, checkOut: `${y}-${m}-09`, note: 'Bringing the dog 🐕' },
-  { id: '2', userId: 'mock-2', checkIn: `${y}-${m}-15`, checkOut: `${y}-${m}-18` },
-  { id: '3', userId: 'mock-3', checkIn: `${y}-${m}-22`, checkOut: `${y}-${m}-26`, note: 'Birthday week 🎉' },
+  { id: '1', userId: 'mock-1', checkIn: `${_y}-${_m}-05`, checkOut: `${_y}-${_m}-09`, note: 'Bringing the dog 🐕' },
+  { id: '2', userId: 'mock-2', checkIn: `${_y}-${_m}-15`, checkOut: `${_y}-${_m}-18` },
+  { id: '3', userId: 'mock-3', checkIn: `${_y}-${_m}-22`, checkOut: `${_y}-${_m}-26`, note: 'Birthday week 🎉' },
 ];
 
 const MOCK_PROFILES: HolidayProfile[] = [
@@ -43,16 +61,33 @@ const MOCK_PROFILES: HolidayProfile[] = [
   { id: 'mock-3', display_name: 'Lars',  avatar_url: null },
 ];
 
-// ── Colors ───────────────────────────────────────────────────
+const MOCK_MEMBERS: HolidayMemberInfo[] = [
+  { userId: 'mock-1', displayName: 'Koen', avatarUrl: null },
+  { userId: 'mock-2', displayName: 'Emma', avatarUrl: null },
+  { userId: 'mock-3', displayName: 'Lars',  avatarUrl: null },
+];
+
+// ── Helpers ───────────────────────────────────────────────────
 
 const BOOKING_COLORS = [
-  { bg: '#DBEAFE', border: '#93C5FD', text: '#1D4ED8' }, // blue
-  { bg: '#EDE9FE', border: '#C4B5FD', text: '#6D28D9' }, // violet
-  { bg: '#D1FAE5', border: '#6EE7B7', text: '#065F46' }, // emerald
-  { bg: '#FEF3C7', border: '#FCD34D', text: '#92400E' }, // amber
-  { bg: '#FCE7F3', border: '#F9A8D4', text: '#9D174D' }, // pink
-  { bg: '#CFFAFE', border: '#67E8F9', text: '#155E75' }, // cyan
+  { bg: '#DBEAFE', border: '#93C5FD', text: '#1D4ED8' },
+  { bg: '#EDE9FE', border: '#C4B5FD', text: '#6D28D9' },
+  { bg: '#D1FAE5', border: '#6EE7B7', text: '#065F46' },
+  { bg: '#FEF3C7', border: '#FCD34D', text: '#92400E' },
+  { bg: '#FCE7F3', border: '#F9A8D4', text: '#9D174D' },
+  { bg: '#CFFAFE', border: '#67E8F9', text: '#155E75' },
 ];
+
+const AVATAR_COLORS = [
+  'bg-blue-500', 'bg-violet-500', 'bg-emerald-500',
+  'bg-orange-500', 'bg-pink-500', 'bg-cyan-500', 'bg-amber-500',
+];
+
+function avatarColorClass(userId: string): string {
+  let n = 0;
+  for (const c of userId) n += c.charCodeAt(0);
+  return AVATAR_COLORS[n % AVATAR_COLORS.length];
+}
 
 function bookingColor(userId: string) {
   let n = 0;
@@ -60,13 +95,13 @@ function bookingColor(userId: string) {
   return BOOKING_COLORS[n % BOOKING_COLORS.length];
 }
 
-function initials(profile: HolidayProfile | undefined) {
-  if (!profile) return '?';
-  return (profile.display_name ?? profile.id)
-    .trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+function getInitials(name: string | null, fallback: string): string {
+  return (name ?? fallback).trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-// ── Grid builder ─────────────────────────────────────────────
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function buildMonthGrid(month: Date): (Date | null)[] {
   const year  = month.getFullYear();
@@ -80,32 +115,58 @@ function buildMonthGrid(month: Date): (Date | null)[] {
   return cells;
 }
 
-// ── Component ────────────────────────────────────────────────
+// ── InviteCopyButton ──────────────────────────────────────────
 
-export default function HolidayCalendar({ bookings: bookingsProp, profiles: profilesProp }: Props) {
+function InviteCopyButton({ spaceId }: { spaceId: string }) {
+  const [loading, setLoading] = useState(false);
+  const [copied,  setCopied]  = useState(false);
+
+  async function handleCopy() {
+    setLoading(true);
+    const r = await generateInviteLink(spaceId);
+    setLoading(false);
+    if (!r.success || !r.token) return;
+    await navigator.clipboard.writeText(`${window.location.origin}/join/${r.token}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      disabled={loading}
+      className={`w-full text-center py-2.5 rounded-xl text-sm font-medium transition-colors border
+        ${copied
+          ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+          : 'text-gray-500 hover:bg-gray-100 border-gray-200 disabled:opacity-40'}`}
+    >
+      {loading ? 'Generating…' : copied ? '✓ Link copied' : 'Copy invite link'}
+    </button>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────
+
+export default function HolidayCalendar({
+  userId, spaceId, spaceSlug, isAdmin,
+  bookings: bookingsProp,
+  profiles: profilesProp,
+  spaceInfo,
+  membersList: membersListProp,
+}: Props) {
   const activeBookings = bookingsProp.length > 0 ? bookingsProp : MOCK_BOOKINGS;
   const activeProfiles = profilesProp.length > 0 ? profilesProp : MOCK_PROFILES;
+  const activeMembers  = membersListProp.length > 0 ? membersListProp : MOCK_MEMBERS;
 
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const d = new Date(); d.setDate(1); return d;
-  });
+  const [currentMonth,    setCurrentMonth]    = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectingCheckIn, setSelectingCheckIn] = useState<string | null>(null);
-  const [hoverDate, setHoverDate] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ booking: HolidayBooking; x: number; y: number } | null>(null);
+  const [hoverDate,        setHoverDate]        = useState<string | null>(null);
+  const [tooltip,          setTooltip]          = useState<HolidayBooking | null>(null);
 
-  function prevMonth() {
-    setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  }
-  function nextMonth() {
-    setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
-  }
+  const todayStr = toDateStr(new Date());
+  const cells    = buildMonthGrid(currentMonth);
 
-  const cells = buildMonthGrid(currentMonth);
-  const todayStr = new Date().toISOString().slice(0, 10);
-
-  function toDateStr(d: Date) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
+  const periodLabel = currentMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
   function findBooking(ds: string) {
     return activeBookings.find(b => b.checkIn <= ds && ds <= b.checkOut);
@@ -114,7 +175,7 @@ export default function HolidayCalendar({ bookings: bookingsProp, profiles: prof
   function isInPreview(ds: string) {
     if (!selectingCheckIn || !hoverDate) return false;
     const lo = selectingCheckIn < hoverDate ? selectingCheckIn : hoverDate;
-    const hi = selectingCheckIn < hoverDate ? hoverDate : selectingCheckIn;
+    const hi = selectingCheckIn > hoverDate ? selectingCheckIn : hoverDate;
     return lo <= ds && ds <= hi;
   }
 
@@ -124,6 +185,7 @@ export default function HolidayCalendar({ bookings: bookingsProp, profiles: prof
       setSelectingCheckIn(ds);
     } else {
       if (ds >= selectingCheckIn) {
+        // TODO: wire to server action
         console.log('Book:', selectingCheckIn, '→', ds);
         setSelectingCheckIn(null);
         setHoverDate(null);
@@ -133,152 +195,239 @@ export default function HolidayCalendar({ bookings: bookingsProp, profiles: prof
     }
   }
 
+  // Nights booked this year per member
+  const yearStr = String(new Date().getFullYear());
+  function getNightsUsed(memberId: string): number {
+    return activeBookings
+      .filter(b => b.userId === memberId && b.checkIn.startsWith(yearStr))
+      .reduce((sum, b) => {
+        const ci = new Date(b.checkIn);
+        const co = new Date(b.checkOut);
+        return sum + Math.round((co.getTime() - ci.getTime()) / 86400000) + 1;
+      }, 0);
+  }
+
   return (
-    <div className="flex-1 flex flex-col overflow-auto" style={{ backgroundColor: '#F7F7F7' }}>
-      <div className="max-w-2xl mx-auto w-full px-5 py-6">
+    <div className="flex gap-3 h-full">
 
-        {/* Month nav */}
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={prevMonth}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-white border border-transparent hover:border-gray-200 transition-all text-xl"
-          >
-            ‹
-          </button>
-          <h2 className="text-lg font-bold text-gray-900">
-            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </h2>
-          <button
-            onClick={nextMonth}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-white border border-transparent hover:border-gray-200 transition-all text-xl"
-          >
-            ›
-          </button>
-        </div>
+      {/* ── Calendar panel ───────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
 
-        {/* Day of week headers */}
-        <div className="grid grid-cols-7 mb-2">
-          {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => (
-            <div key={d} className="text-xs text-gray-400 font-medium text-center py-1">{d}</div>
-          ))}
-        </div>
-
-        {/* Status hint */}
-        {selectingCheckIn && (
-          <div className="mb-3 text-xs text-gray-500 text-center">
-            Check-in: <strong>{selectingCheckIn}</strong> — now click a check-out date
+        {/* Toolbar */}
+        <div className="flex-none flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-1">
             <button
-              onClick={() => { setSelectingCheckIn(null); setHoverDate(null); }}
-              className="ml-2 text-gray-400 hover:text-gray-700"
-            >
-              ✕
-            </button>
+              onClick={() => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg"
+            >‹</button>
+            <button
+              onClick={() => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg"
+            >›</button>
+            <h2 className="text-base font-semibold text-gray-900 ml-1">{periodLabel}</h2>
           </div>
-        )}
-
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7">
-          {cells.map((date, i) => {
-            if (!date) return <div key={`empty-${i}`} />;
-
-            const ds       = toDateStr(date);
-            const booking  = findBooking(ds);
-            const isCI     = booking?.checkIn  === ds;
-            const isCO     = booking?.checkOut === ds;
-            const isMid    = !!(booking && !isCI && !isCO);
-            const isSingle = !!(booking && booking.checkIn === booking.checkOut);
-            const inPreview = !booking && isInPreview(ds);
-            const isToday  = ds === todayStr;
-            const color    = booking ? bookingColor(booking.userId) : null;
-            const profile  = booking ? activeProfiles.find(p => p.id === booking.userId) : null;
-
-            let borderRadius = '12px';
-            if (booking && !isSingle) {
-              if (isCI)       borderRadius = '12px 0 0 12px';
-              else if (isCO)  borderRadius = '0 12px 12px 0';
-              else            borderRadius = '0';
-            }
-
-            const cellStyle: React.CSSProperties = {
-              borderRadius,
-              backgroundColor: booking ? color!.bg : inPreview ? '#E5E7EB' : undefined,
-              borderTop:    booking ? `1.5px solid ${color!.border}` : undefined,
-              borderBottom: booking ? `1.5px solid ${color!.border}` : undefined,
-              borderLeft:   booking && !isMid && !isCO  ? `1.5px solid ${color!.border}` : booking ? 'none' : undefined,
-              borderRight:  booking && !isMid && !isCI  ? `1.5px solid ${color!.border}` : booking ? 'none' : undefined,
-            };
-
-            return (
-              <div
-                key={ds}
-                style={cellStyle}
-                className={`relative h-14 flex flex-col items-center justify-center transition-all select-none
-                  ${!booking && !inPreview ? 'hover:bg-white hover:border hover:border-gray-200 rounded-xl cursor-pointer' : ''}
-                  ${booking ? 'cursor-default' : ''}
-                `}
-                onClick={() => handleDayClick(ds)}
-                onMouseEnter={() => {
-                  setHoverDate(ds);
-                  if (booking) setTooltip({ booking, x: 0, y: 0 });
-                }}
-                onMouseLeave={() => {
-                  setHoverDate(null);
-                  setTooltip(null);
-                }}
-              >
-                {/* Date number */}
-                <span
-                  className={`text-sm font-medium ${isToday && !booking ? 'text-gray-900 font-bold' : ''}`}
-                  style={{ color: booking ? color!.text : undefined }}
-                >
-                  {date.getDate()}
-                </span>
-
-                {/* Today dot */}
-                {isToday && (
-                  <div className={`absolute bottom-1.5 w-1 h-1 rounded-full ${booking ? 'opacity-50' : 'bg-gray-400'}`}
-                    style={booking ? { backgroundColor: color!.text } : undefined}
-                  />
-                )}
-
-                {/* Avatar on check-in */}
-                {isCI && profile && (
-                  <div
-                    className="absolute -top-2 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white overflow-hidden z-10"
-                    style={{ backgroundColor: color!.text }}
-                    title={profile.display_name ?? undefined}
-                  >
-                    {profile.avatar_url
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                      : initials(profile)
-                    }
-                  </div>
-                )}
-
-                {/* Note icon */}
-                {isCI && booking?.note && (
-                  <span className="absolute bottom-1 right-1 text-[10px] opacity-60">💬</span>
-                )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentMonth(() => { const d = new Date(); d.setDate(1); return d; })}
+              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
+            >
+              Today
+            </button>
+            {selectingCheckIn && (
+              <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl px-3 py-1.5 text-xs text-gray-600">
+                <span>Check-in: <strong>{selectingCheckIn}</strong></span>
+                <button onClick={() => { setSelectingCheckIn(null); setHoverDate(null); }} className="text-gray-400 hover:text-gray-700 ml-1">✕</button>
               </div>
-            );
-          })}
+            )}
+          </div>
         </div>
 
-        {/* Tooltip */}
-        {tooltip && (
-          <div
-            className="fixed z-50 bg-white border border-gray-200 rounded-2xl p-4 shadow-lg text-sm pointer-events-none"
-            style={{ bottom: '80px', left: '50%', transform: 'translateX(-50%)', minWidth: '200px' }}
-          >
-            <p className="font-semibold text-gray-900">
-              {activeProfiles.find(p => p.id === tooltip.booking.userId)?.display_name ?? 'Member'}
-            </p>
-            <p className="text-gray-400 text-xs mt-0.5">{tooltip.booking.checkIn} → {tooltip.booking.checkOut}</p>
-            {tooltip.booking.note && <p className="text-gray-500 mt-2 text-xs">{tooltip.booking.note}</p>}
+        {/* Month grid */}
+        <div className="flex-1 overflow-auto">
+
+          {/* Day-of-week headers */}
+          <div className="sticky top-0 z-10 grid grid-cols-7 border-b border-gray-100 bg-white" style={{ height: '3rem' }}>
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+              <div key={d} className="h-full flex items-center justify-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+                {d}
+              </div>
+            ))}
           </div>
-        )}
+
+          {/* Grid cells */}
+          <div className="grid grid-cols-7" style={{ gridAutoRows: 'minmax(5.5rem, 1fr)' }}>
+            {cells.map((date, i) => {
+              if (!date) return <div key={`empty-${i}`} className="border-b border-r border-gray-50" />;
+
+              const ds       = toDateStr(date);
+              const booking  = findBooking(ds);
+              const isCI     = booking?.checkIn  === ds;
+              const isCO     = booking?.checkOut === ds;
+              const isMid    = !!(booking && !isCI && !isCO);
+              const isSingle = !!(booking && booking.checkIn === booking.checkOut);
+              const inPreview = !booking && isInPreview(ds);
+              const isToday  = ds === todayStr;
+              const color    = booking ? bookingColor(booking.userId) : null;
+              const profile  = booking ? activeProfiles.find(p => p.id === booking.userId) : null;
+
+              // Band border-radius effect
+              let borderRadius = '10px';
+              if (booking && !isSingle) {
+                if (isCI)      borderRadius = '10px 0 0 10px';
+                else if (isCO) borderRadius = '0 10px 10px 0';
+                else           borderRadius = '0';
+              }
+
+              const bandStyle: React.CSSProperties = booking ? {
+                borderRadius,
+                backgroundColor: color!.bg,
+                borderTop:    `1.5px solid ${color!.border}`,
+                borderBottom: `1.5px solid ${color!.border}`,
+                borderLeft:   (!isMid && !isCO) ? `1.5px solid ${color!.border}` : 'none',
+                borderRight:  (!isMid && !isCI) ? `1.5px solid ${color!.border}` : 'none',
+              } : {};
+
+              return (
+                <div
+                  key={ds}
+                  className={`relative p-2 flex flex-col border-b border-r border-gray-50 transition-colors
+                    ${!booking ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'}
+                  `}
+                  onClick={() => handleDayClick(ds)}
+                  onMouseEnter={() => { setHoverDate(ds); if (booking) setTooltip(booking); }}
+                  onMouseLeave={() => { setHoverDate(null); setTooltip(null); }}
+                >
+                  {/* Date number */}
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className={`text-sm font-semibold leading-none ${isToday ? 'text-gray-900' : 'text-gray-500'}`}>
+                      {date.getDate()}
+                    </span>
+                    {isToday && <div className="w-1.5 h-1.5 rounded-full bg-gray-800" />}
+                  </div>
+
+                  {/* Preview highlight */}
+                  {inPreview && (
+                    <div className="absolute inset-x-0 inset-y-8 bg-gray-100 rounded-lg mx-1" />
+                  )}
+
+                  {/* Booking band */}
+                  {booking && (
+                    <div
+                      className="absolute left-0 right-0 flex items-center px-2"
+                      style={{ ...bandStyle, top: '2rem', height: '2rem' }}
+                    >
+                      {/* Avatar on check-in */}
+                      {isCI && (
+                        <div
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white overflow-hidden shrink-0 mr-1.5"
+                          style={{ backgroundColor: color!.text }}
+                        >
+                          {profile?.avatar_url
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                            : getInitials(profile?.display_name ?? null, booking.userId)
+                          }
+                        </div>
+                      )}
+                      {/* Name + note icon on check-in */}
+                      {isCI && (
+                        <span className="text-xs font-medium truncate" style={{ color: color!.text }}>
+                          {profile?.display_name?.split(' ')[0] ?? ''}
+                          {booking.note ? ' 💬' : ''}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
+
+      {/* ── Side panel ───────────────────────────────────────── */}
+      <div className="w-72 xl:w-80 flex-shrink-0 bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden">
+
+        {/* Top: scrollable space info */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div>
+            {spaceInfo.heroImageUrl && (
+              <div className="relative" style={{ height: '211px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={spaceInfo.heroImageUrl} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, white 100%)' }} />
+              </div>
+            )}
+            <div className="px-5 flex items-center" style={{ height: '64px' }}>
+              <h2 className="text-base font-semibold text-gray-900">{spaceInfo.name}</h2>
+            </div>
+            {spaceInfo.welcomeMessage && (
+              <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
+            )}
+            <hr className="border-gray-100 mx-5" />
+          </div>
+
+          {spaceInfo.address && (
+            <div className="px-5 py-5 space-y-3">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Location</p>
+              <div className="space-y-1.5">
+                <p className="text-sm text-gray-700 whitespace-pre-line leading-snug">{spaceInfo.address}</p>
+                <a
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(spaceInfo.address.replace(/\n/g, ', '))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  View on map →
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom: members + invite */}
+        <div>
+          <hr className="border-gray-100 mx-5" />
+          <div className="p-5 space-y-4">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Members</p>
+            <div className="space-y-3">
+              {activeMembers.map(m => {
+                const nights   = getNightsUsed(m.userId);
+                const initials = getInitials(m.displayName, m.userId);
+                return (
+                  <div key={m.userId} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0 overflow-hidden ${m.avatarUrl ? '' : avatarColorClass(m.userId)}`}>
+                      {m.avatarUrl
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={m.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        : initials}
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-gray-800 truncate">{m.displayName ?? 'Unknown'}</span>
+                    <span className="text-xs text-gray-400 tabular-nums shrink-0">{nights}n this year</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="px-5 pb-5">
+            <InviteCopyButton spaceId={spaceId} />
+          </div>
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div
+          className="fixed z-50 bg-white border border-gray-200 rounded-2xl p-4 shadow-lg text-sm pointer-events-none"
+          style={{ bottom: '32px', right: '320px' }}
+        >
+          <p className="font-semibold text-gray-900">
+            {activeProfiles.find(p => p.id === tooltip.userId)?.display_name ?? 'Member'}
+          </p>
+          <p className="text-gray-400 text-xs mt-0.5">{tooltip.checkIn} → {tooltip.checkOut}</p>
+          {tooltip.note && <p className="text-gray-500 mt-2 text-xs">{tooltip.note}</p>}
+        </div>
+      )}
     </div>
   );
 }
