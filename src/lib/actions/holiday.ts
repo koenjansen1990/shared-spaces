@@ -35,3 +35,17 @@ export async function cancelHolidayBooking(bookingId: string) {
 
   return error ? { success: false as const, error: error.message } : { success: true as const };
 }
+
+export async function updateHolidayBookingNote(bookingId: string, note: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
+
+  const service = createSupabaseServiceClient() as any;
+  const { error } = await service.from('holiday_bookings')
+    .update({ note: note.trim() || null })
+    .eq('id', bookingId)
+    .eq('user_id', user.id); // can only edit your own
+
+  return error ? { success: false as const, error: error.message } : { success: true as const };
+}

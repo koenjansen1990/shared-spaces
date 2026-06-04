@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { generateInviteLink } from '@/lib/actions/profile';
-import { createHolidayBooking, cancelHolidayBooking } from '@/lib/actions/holiday';
+import { createHolidayBooking, cancelHolidayBooking, updateHolidayBookingNote } from '@/lib/actions/holiday';
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -122,13 +122,14 @@ type ModalState =
   | { mode: 'existing'; booking: HolidayBooking };
 
 function HolidayModal({
-  modal, userId, spaceId, profiles, onBooked, onCancelled, onClose,
+  modal, userId, spaceId, profiles, onBooked, onUpdated, onCancelled, onClose,
 }: {
   modal:        ModalState;
   userId:       string;
   spaceId:      string;
   profiles:     HolidayProfile[];
   onBooked:     (booking: HolidayBooking) => void;
+  onUpdated:    (booking: HolidayBooking) => void;
   onCancelled:  (id: string) => void;
   onClose:      () => void;
 }) {
@@ -142,6 +143,9 @@ function HolidayModal({
   const [note,     setNote]     = useState(isNew ? '' : (existing?.note ?? ''));
   const [pending,  setPending]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+
+  const originalNote = isNew ? '' : (existing?.note ?? '');
+  const noteChanged  = !isNew && isMine && note !== originalNote;
 
   const nights = Math.max(0, Math.round(
     (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
@@ -157,6 +161,16 @@ function HolidayModal({
     setPending(false);
     if (!r.success) { setError(r.error); return; }
     onBooked({ id: r.id, userId, checkIn, checkOut, note: note.trim() || null });
+    onClose();
+  }
+
+  async function handleSaveNote() {
+    if (!existing) return;
+    setPending(true); setError(null);
+    const r = await updateHolidayBookingNote(existing.id, note);
+    setPending(false);
+    if (!r.success) { setError(r.error); return; }
+    onUpdated({ ...existing, note: note.trim() || null });
     onClose();
   }
 
@@ -284,13 +298,24 @@ function HolidayModal({
               {pending ? 'Booking…' : `Book · ${nights} night${nights !== 1 ? 's' : ''}`}
             </button>
           ) : isMine ? (
-            <button
-              onClick={handleCancel}
-              disabled={pending}
-              className="w-full py-4 rounded-2xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors font-semibold"
-            >
-              {pending ? 'Cancelling…' : 'Cancel booking'}
-            </button>
+            <>
+              {noteChanged && (
+                <button
+                  onClick={handleSaveNote}
+                  disabled={pending}
+                  className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-base"
+                >
+                  {pending ? 'Saving…' : 'Save note'}
+                </button>
+              )}
+              <button
+                onClick={handleCancel}
+                disabled={pending}
+                className="w-full py-4 rounded-2xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors font-semibold"
+              >
+                {pending ? 'Cancelling…' : 'Cancel booking'}
+              </button>
+            </>
           ) : null}
           <button onClick={onClose} className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
             Close
@@ -324,6 +349,10 @@ export default function HolidayCalendar({
 
   function handleBooked(booking: HolidayBooking) {
     setBookings(prev => [...prev, booking]);
+  }
+
+  function handleUpdated(booking: HolidayBooking) {
+    setBookings(prev => prev.map(b => b.id === booking.id ? booking : b));
   }
 
   function handleCancelled(id: string) {
@@ -524,6 +553,7 @@ export default function HolidayCalendar({
           spaceId={spaceId}
           profiles={profiles}
           onBooked={handleBooked}
+          onUpdated={handleUpdated}
           onCancelled={handleCancelled}
           onClose={() => setModal(null)}
         />
