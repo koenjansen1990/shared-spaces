@@ -411,10 +411,10 @@ export default function HolidayCalendar({
         </div>
 
         {/* Month grid */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 flex flex-col min-h-0">
 
           {/* Day-of-week headers */}
-          <div className="sticky top-0 z-10 grid grid-cols-7 border-b border-gray-100 bg-white" style={{ height: '3rem' }}>
+          <div className="flex-none grid grid-cols-7 border-b border-gray-100" style={{ height: '3rem' }}>
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
               <div key={d} className="h-full flex items-center justify-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
                 {d}
@@ -422,8 +422,8 @@ export default function HolidayCalendar({
             ))}
           </div>
 
-          {/* Grid cells */}
-          <div className="grid grid-cols-7" style={{ gridAutoRows: 'minmax(5.5rem, 1fr)' }}>
+          {/* Grid cells — fills remaining height */}
+          <div className="flex-1 grid grid-cols-7 min-h-0" style={{ gridTemplateRows: `repeat(${cells.length / 7}, 1fr)` }}>
             {cells.map((date, i) => {
               if (!date) return <div key={`empty-${i}`} className="border-b border-r border-gray-50" />;
 
