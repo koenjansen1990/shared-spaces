@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateSpaceDetails, generateInviteLink } from '@/lib/actions/profile';
-import { saveSpaceDetails } from '@/lib/actions/setup';
+import { saveSpaceDetails, saveAvailability, saveHolidayRules } from '@/lib/actions/setup';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Space } from '@/types';
 import Button from '@/components/ui/Button';
@@ -11,12 +11,17 @@ import { Input, Textarea } from '@/components/ui/Input';
 import Label from '@/components/ui/Label';
 
 interface Props {
-  space: Space;
-  slug:  string;
+  space:          Space;
+  slug:           string;
+  hoursPerWeek:   number;
+  nightsPerYear:  number;
+  maxConsecutive: number;
+  advanceDays:    number;
 }
 
-export default function ManagePage({ space, slug }: Props) {
+export default function ManagePage({ space, slug, hoursPerWeek: initHours, nightsPerYear: initNights, maxConsecutive: initConsecutive, advanceDays: initAdvance }: Props) {
   const router = useRouter();
+  const spaceType = (space as any).space_type as 'workplace' | 'holiday_home' | null;
 
   const [name,        setName]        = useState(space.name);
   const [description, setDescription] = useState(space.description ?? '');
@@ -36,6 +41,14 @@ export default function ManagePage({ space, slug }: Props) {
 
   const [inviteUrl,     setInviteUrl]     = useState<string | null>(null);
   const [loadingInvite, setLoadingInvite] = useState(false);
+
+  // Rules (studio or holiday home)
+  const [hoursPerWeek,   setHoursPerWeek]   = useState(initHours);
+  const [nightsPerYear,  setNightsPerYear]  = useState(initNights);
+  const [maxConsecutive, setMaxConsecutive] = useState(initConsecutive);
+  const [advanceDays,    setAdvanceDays]    = useState(initAdvance);
+  const [rulesMsg,       setRulesMsg]       = useState<string | null>(null);
+  const [isRules,        startRules]        = useTransition();
 
   async function handleHeroUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -69,6 +82,16 @@ export default function ManagePage({ space, slug }: Props) {
     startDetail(async () => {
       const r = await updateSpaceDetails(space.id, { welcome_message: welcome, contact_email: email, contact_phone: phone, address });
       setDetailMsg(r.success ? 'Saved.' : (r.error ?? 'Error'));
+    });
+  }
+
+  async function handleSaveRules() {
+    setRulesMsg(null);
+    startRules(async () => {
+      const r = spaceType === 'holiday_home'
+        ? await saveHolidayRules(space.id, nightsPerYear, maxConsecutive, advanceDays)
+        : await saveAvailability(space.id, space.name, [], hoursPerWeek, 10, 1);
+      setRulesMsg(r.success ? 'Saved.' : (r.error ?? 'Error'));
     });
   }
 
@@ -180,25 +203,40 @@ export default function ManagePage({ space, slug }: Props) {
         </Button>
       </section>
 
-      {/* Availability / Rules */}
-      <section className="space-y-4 pt-4 border-t border-gray-200">
-        {(space as any).space_type === 'holiday_home' ? (
+      {/* Rules */}
+      <section className="space-y-5 pt-4 border-t border-gray-200">
+        <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Rules</h2>
+
+        {spaceType === 'holiday_home' ? (
           <>
-            <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Rules</h2>
-            <p className="text-xs text-gray-400">Update nights per year, max consecutive nights, and booking window.</p>
-            <Button variant="secondary" onClick={() => router.push(`/space/${slug}/setup?step=2`)}>
-              Edit rules →
-            </Button>
+            <div className="space-y-2">
+              <Label>Nights per year per member</Label>
+              <Input type="number" min={1} value={nightsPerYear}
+                onChange={e => setNightsPerYear(Number(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Max consecutive nights</Label>
+              <Input type="number" min={1} value={maxConsecutive}
+                onChange={e => setMaxConsecutive(Number(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>How many days ahead can members book?</Label>
+              <Input type="number" min={1} value={advanceDays}
+                onChange={e => setAdvanceDays(Number(e.target.value))} />
+            </div>
           </>
         ) : (
-          <>
-            <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Availability</h2>
-            <p className="text-xs text-gray-400">Change which days are bookable and hours per week per member.</p>
-            <Button variant="secondary" onClick={() => router.push(`/space/${slug}/setup?step=2`)}>
-              Reconfigure availability →
-            </Button>
-          </>
+          <div className="space-y-2">
+            <Label>Hours per week per member</Label>
+            <Input type="number" min={1} value={hoursPerWeek}
+              onChange={e => setHoursPerWeek(Number(e.target.value))} />
+          </div>
         )}
+
+        {rulesMsg && <p className={`text-sm ${rulesMsg === 'Saved.' ? 'text-emerald-600' : 'text-red-500'}`}>{rulesMsg}</p>}
+        <Button onClick={handleSaveRules} disabled={isRules}>
+          {isRules ? 'Saving…' : 'Save rules'}
+        </Button>
       </section>
 
       {/* Invite link */}

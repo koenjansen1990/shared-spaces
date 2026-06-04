@@ -23,7 +23,7 @@ export default async function Page({ params }: Props) {
 
   const { data: member } = await supabase
     .from('space_members')
-    .select('role')
+    .select('role, weekly_credit_allowance')
     .eq('space_id', space.id)
     .eq('user_id', user.id)
     .single();
@@ -32,5 +32,23 @@ export default async function Page({ params }: Props) {
     redirect(`/space/${slug}/schedule`);
   }
 
-  return <ManagePage space={space as any} slug={slug} />;
+  // Fetch existing rules for inline editing
+  const { data: rules } = await (supabase.from('space_rules') as any)
+    .select('rule_type, rule_value')
+    .eq('space_id', space.id);
+
+  const ruleMap: Record<string, number> = Object.fromEntries(
+    (rules ?? []).map((r: { rule_type: string; rule_value: number }) => [r.rule_type, r.rule_value])
+  );
+
+  return (
+    <ManagePage
+      space={space as any}
+      slug={slug}
+      hoursPerWeek={member.weekly_credit_allowance ?? ruleMap['default_member_hours'] ?? 40}
+      nightsPerYear={ruleMap['nights_per_year'] ?? 30}
+      maxConsecutive={ruleMap['max_consecutive_nights'] ?? 7}
+      advanceDays={ruleMap['max_advance_days'] ?? 90}
+    />
+  );
 }
