@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import WeeklyCalendar from '@/components/schedule/WeeklyCalendar';
 import type { CalendarSlot, CalendarBooking, CalendarProfile, SpaceInfo, MemberInfo } from '@/components/schedule/WeeklyCalendar';
+import HolidayCalendar from '@/components/schedule/HolidayCalendar';
 
 function toISODate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -24,7 +25,7 @@ export default async function SchedulePage({ params }: Props) {
 
   const { data: space } = await supabase
     .from('spaces')
-    .select('id, name, welcome_message, address, hero_image_url')
+    .select('id, name, welcome_message, address, hero_image_url, space_type')
     .eq('slug', slug)
     .single();
 
@@ -118,19 +119,30 @@ export default async function SchedulePage({ params }: Props) {
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 84px)' }}>
-      <WeeklyCalendar
-        slots={slots}
-        bookings={(bookings ?? []) as CalendarBooking[]}
-        profiles={(profilesData ?? []) as CalendarProfile[]}
-        userId={user.id}
-        isAdmin={isAdmin}
-        spaceSlug={slug}
-        spaceId={space.id}
-        weeklyAllowance={weeklyAllowance}
-        weeklyUsed={weeklyUsed}
-        spaceInfo={spaceInfo}
-        membersList={membersList}
-      />
+      {(space as any).space_type === 'holiday_home' ? (
+        <HolidayCalendar
+          userId={user.id}
+          spaceId={space.id}
+          bookings={[]}
+          profiles={(profilesData ?? []) as any}
+          isAdmin={isAdmin}
+          spaceSlug={slug}
+        />
+      ) : (
+        <WeeklyCalendar
+          slots={slots}
+          bookings={(bookings ?? []) as CalendarBooking[]}
+          profiles={(profilesData ?? []) as CalendarProfile[]}
+          userId={user.id}
+          isAdmin={isAdmin}
+          spaceSlug={slug}
+          spaceId={space.id}
+          weeklyAllowance={weeklyAllowance}
+          weeklyUsed={weeklyUsed}
+          spaceInfo={spaceInfo}
+          membersList={membersList}
+        />
+      )}
     </div>
   );
 }

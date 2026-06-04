@@ -12,6 +12,7 @@ export type PlanType      = 'free' | 'premium' | 'enterprise';
 export type SlotType      = 'recurring' | 'event';
 export type BookingStatus = 'confirmed' | 'cancelled' | 'waitlisted';
 export type CalendarView  = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type SpaceType     = 'workplace' | 'holiday_home';
 export type RuleKey =
   | 'max_credits_per_week'
   | 'max_bookings_per_week'
@@ -31,6 +32,7 @@ export type Space = {
   contact_phone:           string | null;
   address:                 string | null;
   hero_image_url:          string | null;
+  space_type:              SpaceType | null;
   owner_id:                string;
   plan_type:               PlanType;
   default_view:            CalendarView;
@@ -138,6 +140,7 @@ export type SpaceInsert = {
   owner_id:     string;
   description?: string | null;
   plan_type?:   PlanType;
+  space_type?:  SpaceType;
 };
 
 export type SpaceUpdate = {
@@ -151,6 +154,7 @@ export type SpaceUpdate = {
   plan_type?:               PlanType;
   default_view?:            CalendarView;
   onboarding_completed_at?: string | null;
+  space_type?:              SpaceType;
 };
 
 export type SubscriptionInsert = {
@@ -297,9 +301,9 @@ export type Database = {
   public: {
     Tables: {
       spaces: {
-        Row:           Space;
-        Insert:        SpaceInsert;
-        Update:        SpaceUpdate;
+        Row:           Space & { space_type: SpaceType };
+        Insert:        SpaceInsert & { space_type?: SpaceType };
+        Update:        SpaceUpdate & { space_type?: SpaceType };
         Relationships: [];
       };
       subscriptions: {

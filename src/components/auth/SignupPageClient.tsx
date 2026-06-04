@@ -5,17 +5,17 @@ import AuthForm from '@/components/auth/AuthForm';
 
 // ── Placeholder images (replace with your own) ─────────────────────────────────
 const TRAIL_IMAGES = [
-  'https://images.unsplash.com/photo-1497366216548-37526070297c?w=220&h=280&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=220&h=280&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=220&h=280&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=220&h=280&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=220&h=280&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1531973576160-7125cd663d86?w=220&h=280&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1600508774634-4e11d34730e2?w=220&h=280&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=220&h=280&fit=crop&q=80',
+  '/trail/01.jpg',
+  '/trail/02.jpg',
+  '/trail/03.jpg',
+  '/trail/04.jpg',
+  '/trail/05.jpg',
+  '/trail/06.jpg',
+  '/trail/07.jpg',
+  '/trail/08.jpg',
 ];
 
-const CYCLING_WORDS = ['a workspace', 'a studio', 'a holiday home', 'a creative space', 'a co-working spot', 'a shared place'];
+const CYCLING_WORDS = ['Workspace', 'Studio', 'Holiday Home', 'Boat', 'Camper'];
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -84,12 +84,12 @@ function WordCycle() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center mb-8 select-none pointer-events-none" style={{ gap: '2px' }}>
-      <span className="text-gray-400 text-2xl font-semibold">Share</span>
-      <div className="relative overflow-hidden flex justify-center" style={{ width: '260px' }}>
+    <div className="flex flex-col items-center mb-8 select-none pointer-events-none">
+      <span className="text-gray-400 text-sm font-medium tracking-wide mb-1">Share a</span>
+      <div className="relative overflow-hidden flex justify-center pb-2" style={{ minWidth: '320px' }}>
         <span
-          className="block text-2xl font-semibold text-gray-900 text-center transition-all duration-300"
-          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(-8px)' }}
+          className="block text-5xl font-bold text-gray-900 text-center transition-all duration-300"
+          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(-10px)' }}
         >
           {CYCLING_WORDS[index]}
         </span>

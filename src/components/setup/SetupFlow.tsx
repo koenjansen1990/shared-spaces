@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { saveSpaceDetails, saveAvailability, completeOnboarding } from '@/lib/actions/setup';
+import { saveSpaceDetails, saveAvailability, completeOnboarding, saveSpaceType, saveHolidayRules } from '@/lib/actions/setup';
 import type { Space, CalendarView } from '@/types';
 import Button from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
@@ -28,19 +28,26 @@ interface Props { space: Space }
 
 export default function SetupFlow({ space }: Props) {
   const router = useRouter();
-  const [step, setStep]             = useState(1);
-  const [isPending, startTransition]= useTransition();
-  const [error, setError]           = useState<string | null>(null);
+  const [step, setStep]              = useState(0);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError]            = useState<string | null>(null);
 
-  const [name, setName]           = useState(space.name);
-  const [description, setDesc]    = useState(space.description ?? '');
+  const [spaceType, setSpaceType] = useState<'workplace' | 'holiday_home' | null>(null);
+
+  const [name, setName]        = useState(space.name);
+  const [description, setDesc] = useState(space.description ?? '');
 
   const [days, setDays] = useState<number[]>([1, 3, 5]);
   const [view, setView] = useState<CalendarView>('weekly');
 
-  const [welcome,     setWelcome]  = useState('');
-  const [inviteToken, setToken]    = useState<string | null>(null);
-  const [copied,      setCopied]   = useState(false);
+  // Holiday home rules
+  const [nightsPerYear,  setNightsPerYear]  = useState(30);
+  const [maxConsecutive, setMaxConsecutive] = useState(7);
+  const [advanceDays,    setAdvanceDays]    = useState(90);
+
+  const [welcome,     setWelcome] = useState('');
+  const [inviteToken, setToken]   = useState<string | null>(null);
+  const [copied,      setCopied]  = useState(false);
 
   function toggleDay(d: number) {
     setDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -51,6 +58,14 @@ export default function SetupFlow({ space }: Props) {
     navigator.clipboard.writeText(`${window.location.origin}/join/${inviteToken}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleStep0(type: 'workplace' | 'holiday_home') {
+    setSpaceType(type);
+    startTransition(async () => {
+      await saveSpaceType(space.id, type);
+      setStep(1);
+    });
   }
 
   async function handleStep1() {
@@ -66,8 +81,13 @@ export default function SetupFlow({ space }: Props) {
   async function handleStep2() {
     setError(null);
     startTransition(async () => {
-      const r = await saveAvailability(space.id, name, days, view, 10, 1);
-      if (!r.success) { setError(r.error); return; }
+      if (spaceType === 'holiday_home') {
+        const r = await saveHolidayRules(space.id, nightsPerYear, maxConsecutive, advanceDays);
+        if (!r.success) { setError(r.error); return; }
+      } else {
+        const r = await saveAvailability(space.id, name, days, view, 10, 1);
+        if (!r.success) { setError(r.error); return; }
+      }
       setStep(3);
     });
   }
@@ -86,29 +106,71 @@ export default function SetupFlow({ space }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
-      {/* Progress bar */}
-      <div className="fixed top-0 inset-x-0 z-50 h-0.5 bg-gray-200">
-        <div className="h-full bg-gray-900 transition-all duration-500" style={{ width: `${(step / 3) * 100}%` }} />
-      </div>
+      {/* Progress bar — only visible after step 0 */}
+      {step > 0 && (
+        <div className="fixed top-0 inset-x-0 z-50 h-0.5 bg-gray-200">
+          <div className="h-full bg-gray-900 transition-all duration-500" style={{ width: `${(step / 3) * 100}%` }} />
+        </div>
+      )}
 
-      {/* Step dots */}
-      <div className="fixed top-6 inset-x-0 z-50 flex justify-center gap-2">
-        {[1, 2, 3].map(s => (
-          <div key={s} className={`h-1.5 rounded-full transition-all duration-300
-            ${s === step ? 'bg-gray-900 w-4' : s < step ? 'bg-gray-400' : 'bg-gray-300'}`}
-            style={{ width: s === step ? '1rem' : '0.375rem' }}
-          />
-        ))}
-      </div>
+      {/* Step dots — only visible after step 0 */}
+      {step > 0 && (
+        <div className="fixed top-6 inset-x-0 z-50 flex justify-center gap-2">
+          {[1, 2, 3].map(s => (
+            <div key={s} className={`h-1.5 rounded-full transition-all duration-300
+              ${s === step ? 'bg-gray-900 w-4' : s < step ? 'bg-gray-400' : 'bg-gray-300'}`}
+              style={{ width: s === step ? '1rem' : '0.375rem' }}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 pt-20 pb-16 max-w-lg mx-auto w-full">
+
+        {/* ── Step 0 — Space type picker ── */}
+        {step === 0 && (
+          <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="space-y-2 text-center">
+              <h1 className="text-4xl font-bold text-gray-900">What are you sharing?</h1>
+              <p className="text-gray-400">This shapes how your calendar and fairness rules work.</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {/* Workspace card */}
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => handleStep0('workplace')}
+                className={`text-left bg-white border rounded-2xl p-6 hover:border-gray-400 cursor-pointer transition-all
+                  ${spaceType === 'workplace' ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}
+              >
+                <div className="text-4xl mb-3">🏢</div>
+                <p className="text-lg font-bold text-gray-900">Workspace or Studio</p>
+                <p className="text-sm text-gray-400 mt-1">Book by morning or afternoon slots. Fair weekly hours per member.</p>
+              </button>
+
+              {/* Holiday home card */}
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => handleStep0('holiday_home')}
+                className={`text-left bg-white border rounded-2xl p-6 hover:border-gray-400 cursor-pointer transition-all
+                  ${spaceType === 'holiday_home' ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}
+              >
+                <div className="text-4xl mb-3">🏡</div>
+                <p className="text-lg font-bold text-gray-900">Holiday Home, Van or Boat</p>
+                <p className="text-sm text-gray-400 mt-1">Book multi-day stays. Fair annual nights per member.</p>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── Step 1 ── */}
         {step === 1 && (
           <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest text-gray-400">Step 1 of 3</p>
-              <h1 className="text-4xl font-bold text-gray-900 leading-tight">What's your space called?</h1>
+              <h1 className="text-4xl font-bold text-gray-900 leading-tight">What&apos;s your space called?</h1>
               <p className="text-gray-400">You can always change this later.</p>
             </div>
 
@@ -129,7 +191,7 @@ export default function SetupFlow({ space }: Props) {
         )}
 
         {/* ── Step 2 ── */}
-        {step === 2 && (
+        {step === 2 && spaceType !== 'holiday_home' && (
           <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest text-gray-400">Step 2 of 3</p>
@@ -165,6 +227,58 @@ export default function SetupFlow({ space }: Props) {
                     <p className={`text-xs mt-0.5 ${view === v.value ? 'text-gray-400' : 'text-gray-400'}`}>{v.sub}</p>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            <div className="space-y-3">
+              <Button onClick={handleStep2} disabled={isPending}>
+                {isPending ? 'Saving…' : 'Continue'}
+              </Button>
+              <Button variant="ghost" size="md" full onClick={() => setStep(1)}>Back</Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2 (holiday home) ── */}
+        {step === 2 && spaceType === 'holiday_home' && (
+          <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-widest text-gray-400">Step 2 of 3</p>
+              <h1 className="text-4xl font-bold text-gray-900 leading-tight">Set the rules for {name}</h1>
+              <p className="text-gray-400">These keep things fair for everyone.</p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm text-gray-600 font-medium">Nights per year</label>
+                <Input
+                  type="number"
+                  value={nightsPerYear}
+                  onChange={e => setNightsPerYear(Number(e.target.value))}
+                  min={1}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm text-gray-600 font-medium">Max consecutive nights</label>
+                <Input
+                  type="number"
+                  value={maxConsecutive}
+                  onChange={e => setMaxConsecutive(Number(e.target.value))}
+                  min={1}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm text-gray-600 font-medium">How many days ahead can members book?</label>
+                <Input
+                  type="number"
+                  value={advanceDays}
+                  onChange={e => setAdvanceDays(Number(e.target.value))}
+                  min={1}
+                />
               </div>
             </div>
 

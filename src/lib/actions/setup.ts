@@ -114,3 +114,34 @@ export async function completeOnboarding(spaceId: string, welcomeMessage: string
 
   return { success: true as const, token: token.token };
 }
+
+// Step 0: save space type (workplace | holiday_home)
+export async function saveSpaceType(spaceId: string, spaceType: 'workplace' | 'holiday_home') {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
+  const service = createSupabaseServiceClient();
+  const { error } = await (service.from('spaces') as any).update({ space_type: spaceType }).eq('id', spaceId);
+  return error ? { success: false as const, error: error.message } : { success: true as const };
+}
+
+// Step 2 (holiday home): save nights rules
+export async function saveHolidayRules(
+  spaceId: string,
+  nightsPerYear: number,
+  maxConsecutiveNights: number,
+  advanceBookingDays: number,
+) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
+  const service = createSupabaseServiceClient();
+  const rules = [
+    { space_id: spaceId, rule_type: 'max_credits_per_week' as const, rule_value: nightsPerYear },
+    { space_id: spaceId, rule_type: 'max_bookings_per_week' as const, rule_value: maxConsecutiveNights },
+    { space_id: spaceId, rule_type: 'max_advance_days' as const, rule_value: advanceBookingDays },
+  ];
+  await service.from('space_rules').delete().eq('space_id', spaceId);
+  const { error } = await service.from('space_rules').insert(rules);
+  return error ? { success: false as const, error: error.message } : { success: true as const };
+}
