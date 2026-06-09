@@ -14,7 +14,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.11.1",
   "engines": {
     "node": ">=20"
   },
