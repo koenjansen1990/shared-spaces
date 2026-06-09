@@ -243,10 +243,17 @@ export type FeatureAccessResult =
 // ── Mutation input types ─────────────────────────────────────
 
 export type CreateSpaceInput = {
-  name:         string;
-  slug:         string;
-  description?: string;
-  space_type?:  'workplace' | 'holiday_home';
+  name:             string;
+  slug:             string;
+  description?:     string;
+  space_type?:      'workplace' | 'holiday_home';
+  // Studio rules
+  days?:            number[];
+  hours_per_week?:  number;
+  // Holiday home rules
+  nights_per_year?:  number;
+  max_consecutive?:  number;
+  advance_days?:     number;
 };
 
 export type CreateResourceInput = {

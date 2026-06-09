@@ -89,6 +89,52 @@ export async function createSpace(
     return { success: false, error: 'Something went wrong. Please try again.' };
   }
 
+  // Save rules based on space type
+  if (input.space_type === 'workplace') {
+    const hoursPerWeek = input.hours_per_week ?? 40;
+    const days         = input.days ?? [1, 2, 3, 4, 5];
+
+    // Update owner's weekly allowance
+    await serviceClient.from('space_members')
+      .update({ weekly_credit_allowance: hoursPerWeek })
+      .eq('space_id', space.id).eq('user_id', user.id);
+
+    // Save default hours rule
+    await serviceClient.from('space_rules').insert({
+      space_id: space.id, rule_type: 'default_member_hours', rule_value: hoursPerWeek,
+    });
+
+    // Create slots for selected days
+    if (days.length > 0) {
+      const ALL_SLOT_TIMES = [
+        { start: '00:00', end: '23:59', hours: 8 },
+        { start: '08:00', end: '13:00', hours: 4 },
+        { start: '13:00', end: '18:00', hours: 4 },
+      ];
+      const { data: resource } = await serviceClient.from('resources')
+        .insert({ space_id: space.id, name: input.name.trim() })
+        .select('id').single();
+      if (resource) {
+        await serviceClient.from('slots').insert(
+          days.flatMap(day => ALL_SLOT_TIMES.map(w => ({
+            resource_id: resource.id, space_id: space.id,
+            slot_type: 'recurring' as const, recurrence_day: day,
+            start_time: w.start, end_time: w.end,
+            max_capacity: 10, credit_cost: w.hours,
+          })))
+        );
+      }
+    }
+  } else if (input.space_type === 'holiday_home') {
+    await (serviceClient.from('spaces') as any)
+      .update({
+        holiday_nights_per_year:    input.nights_per_year   ?? 30,
+        holiday_max_consecutive:    input.max_consecutive   ?? 7,
+        holiday_advance_days:       input.advance_days      ?? 90,
+      })
+      .eq('id', space.id);
+  }
+
   // Redirect happens outside try/catch so Next.js can handle it properly
   redirect(`/space/${space.slug}/setup`);
 }
