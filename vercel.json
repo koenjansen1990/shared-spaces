@@ -1,0 +1,4 @@
+{
+  "installCommand": "npm i -g pnpm@9 && pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run build"
+}
