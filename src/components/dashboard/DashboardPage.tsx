@@ -9,13 +9,19 @@ import { deleteSpace } from '@/lib/actions/space';
 import type { SpaceMembership } from '@/app/dashboard/page';
 
 const SPACE_TYPE_LABELS: Record<string, string> = {
-  weekly:  'Weekly planning',
-  monthly: 'Monthly planning',
+  weekly:       'Weekly',
+  monthly:      'Monthly',
+  // legacy DB values
+  workplace:    'Weekly',
+  holiday_home: 'Monthly',
 };
 
 const SPACE_TYPE_EMOJI: Record<string, string> = {
-  weekly:  '📅',
-  monthly: '🗓️',
+  weekly:       '📅',
+  monthly:      '🗓️',
+  // legacy DB values
+  workplace:    '📅',
+  holiday_home: '🗓️',
 };
 
 // ── Delete confirmation modal ────────────────────────────
@@ -168,7 +174,7 @@ function SpaceCard({
   const typeEmoji       = space.space_type ? (SPACE_TYPE_EMOJI[space.space_type] ?? '📅') : '📅';
 
   return (
-    <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+    <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-900 transition-colors flex flex-col">
       {/* Three-dot menu — outside the Link to avoid nested <a> */}
       {isOwner && (
         <div className="absolute top-2 right-2 z-10">
