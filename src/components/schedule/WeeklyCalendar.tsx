@@ -340,27 +340,53 @@ function SlotModal({ item, onClose, onBooked, onNoteUpdated, userId, spaceId, pr
 
         {/* Note — all states */}
         {error !== 'conflict' && (
-          !booked ? (
-            // New booking: editable note
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="Leave a note..."
-              rows={2}
-              className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
-            />
-          ) : isMine ? (
-            // My existing booking: editable note
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="Leave a note..."
-              rows={2}
-              className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
-            />
+          !booked || isMine ? (
+            // New booking or my existing booking
+            <div className="space-y-2">
+              {/* Saved note bubble */}
+              {originalNote && (
+                <div className="flex gap-2 items-start">
+                  {myProfile?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={myProfile.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5" />
+                  ) : (
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold text-white shrink-0 mt-0.5 ${avatarColor(userId)}`}>
+                      {myInitials}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2 flex-1">
+                    <p className="text-sm text-gray-800 leading-snug">{originalNote}</p>
+                  </div>
+                </div>
+              )}
+              {/* Edit / new textarea */}
+              <textarea
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                placeholder={originalNote ? 'Edit your note…' : 'Leave a note…'}
+                rows={originalNote ? 1 : 2}
+                className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
+              />
+            </div>
           ) : booking?.notes ? (
-            // Someone else's booking with a note: read-only
-            <p className="text-sm text-gray-600 bg-gray-50 rounded-2xl px-4 py-3">{booking.notes}</p>
+            // Someone else's booking: read-only bubble
+            <div className="flex gap-2 items-start">
+              {(() => {
+                const p = profiles.find(pp => pp.id === booking.user_id);
+                const initials = p?.display_name?.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() ?? '?';
+                return p?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5" />
+                ) : (
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold text-white shrink-0 mt-0.5 ${avatarColor(booking.user_id)}`}>
+                    {initials}
+                  </div>
+                );
+              })()}
+              <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2 flex-1">
+                <p className="text-sm text-gray-800 leading-snug">{booking.notes}</p>
+              </div>
+            </div>
           ) : null
         )}
 
@@ -626,7 +652,9 @@ export default function WeeklyCalendar({
                         <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={3} />
                       </div>
                       {noteText && (
-                        <p className="text-xs text-gray-500 leading-snug mt-2 line-clamp-3">{noteText}</p>
+                        <div className="mt-2 bg-white/60 rounded-xl px-2.5 py-1.5">
+                          <p className="text-xs text-gray-600 leading-snug line-clamp-3">{noteText}</p>
+                        </div>
                       )}
                       <div className="mt-auto pt-2">
                         <p className="text-xs text-gray-400 leading-tight">{bookerName}</p>
@@ -660,7 +688,9 @@ export default function WeeklyCalendar({
                         </div>
                       )}
                       {noteText && (
-                        <p className="text-xs text-gray-500 leading-snug mt-2 line-clamp-2">{noteText}</p>
+                        <div className="mt-2 bg-white/60 rounded-xl px-2.5 py-1.5">
+                          <p className="text-xs text-gray-600 leading-snug line-clamp-2">{noteText}</p>
+                        </div>
                       )}
                       <div className="mt-auto pt-1">
                         <p className="text-xs text-gray-400 leading-tight">
@@ -842,6 +872,7 @@ export default function WeeklyCalendar({
 
       {modal && (
         <SlotModal
+          key={`${modal.date}-${modal.slot.id}`}
           item={modal}
           onClose={() => setModal(null)}
           onBooked={handleBooked}
