@@ -131,6 +131,8 @@ type ModalSlot = {
   myDayBookings: CalendarBooking[];
 };
 
+type BookedCallback = (slotId: string, date: string, bookingId: string | false, note?: string | null) => void;
+
 const BOOKING_ERRORS: Record<string, string> = {
   ALREADY_BOOKED:       'You already have this booked.',
   SLOT_FULL:            'This slot is full.',
@@ -219,7 +221,7 @@ function InviteCopyButton({ spaceId }: { spaceId: string }) {
 function SlotModal({ item, onClose, onBooked, onNoteUpdated, userId, spaceId, profiles, weeklyRemaining }: {
   item:            ModalSlot;
   onClose:         () => void;
-  onBooked:        (slotId: string, date: string, bookingId: string | false) => void;
+  onBooked:        BookedCallback;
   onNoteUpdated:   (bookingId: string, note: string | null) => void;
   userId:          string;
   spaceId:         string;
@@ -250,9 +252,10 @@ function SlotModal({ item, onClose, onBooked, onNoteUpdated, userId, spaceId, pr
 
   async function handleBook() {
     setPending(true); setError(null);
-    const r = await createBooking({ slot_id: slot.id, booking_date: date, notes: note.trim() || null });
+    const savedNote = note.trim() || null;
+    const r = await createBooking({ slot_id: slot.id, booking_date: date, notes: savedNote });
     setPending(false);
-    if (r.success) { onBooked(slot.id, date, r.booking_id); onClose(); }
+    if (r.success) { onBooked(slot.id, date, r.booking_id, savedNote); onClose(); }
     else if (r.error === 'CONFLICT') setError('conflict');
     else setError(BOOKING_ERRORS[r.error] ?? r.error);
   }
@@ -441,11 +444,11 @@ export default function WeeklyCalendar({
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, notes: note } : b));
   }, []);
 
-  const handleBooked = useCallback((slotId: string, date: string, bookingId: string | false) => {
+  const handleBooked = useCallback((slotId: string, date: string, bookingId: string | false, note?: string | null) => {
     const cost = slots.find(s => s.id === slotId)?.credit_cost ?? 0;
     setBookings(prev =>
       bookingId !== false
-        ? [...prev, { id: bookingId, slot_id: slotId, booking_date: date, user_id: userId, status: 'confirmed' as const, credits_consumed: cost, notes: null }]
+        ? [...prev, { id: bookingId, slot_id: slotId, booking_date: date, user_id: userId, status: 'confirmed' as const, credits_consumed: cost, notes: note ?? null }]
         : prev.map(b => b.slot_id === slotId && b.booking_date === date && b.user_id === userId
             ? { ...b, status: 'cancelled' as const } : b)
     );

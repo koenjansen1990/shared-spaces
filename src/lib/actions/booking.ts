@@ -129,30 +129,22 @@ export async function updateBookingNote(
   bookingId: string,
   note: string,
 ): Promise<{ success: boolean; error?: string }> {
-  // Auth check with user client, then write with service client to avoid
-  // RLS UPDATE restrictions (bookings are typically insert-only via RPC).
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'UNAUTHENTICATED' };
 
-  // Verify the booking belongs to this user before updating
-  const { data: booking } = await supabase
-    .from('bookings')
-    .select('id, user_id, status')
-    .eq('id', bookingId)
-    .single();
-
-  if (!booking || booking.user_id !== user.id || booking.status !== 'confirmed') {
-    return { success: false, error: 'Booking not found or not yours.' };
-  }
-
+  // Use service client to bypass RLS, but scope the update to the current
+  // user so they can only edit their own bookings.
   const service = createSupabaseServiceClient();
-  const { error } = await service
-    .from('bookings')
-    .update({ notes: note.trim() || null })
-    .eq('id', bookingId);
+  const { error, count } = await (service
+    .from('bookings') as any)
+    .update({ notes: note.trim() || null }, { count: 'exact' })
+    .eq('id', bookingId)
+    .eq('user_id', user.id);
 
-  return error ? { success: false, error: error.message } : { success: true };
+  if (error) return { success: false, error: error.message };
+  if (count === 0) return { success: false, error: 'Booking not found or not yours.' };
+  return { success: true };
 }
 
 // cancelMyBookingsForDate — cancels all of the current user's confirmed bookings
