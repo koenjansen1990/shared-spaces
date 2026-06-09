@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/supabase/server';
 import type { CreateBookingInput, BookingResult } from '@/types';
 
 // createBooking – Server Action
@@ -58,11 +58,19 @@ export async function createBooking(
 
   const result = data as BookingResult;
 
-  // ── 4. Cache invalidation on success ────────────────────
+  // ── 4. Save note + cache invalidation on success ────────
   if (result.success) {
-    // We need the slug to invalidate the right path; fetch it from the booking.
-    // The slot's space_id is embedded in the RPC result indirectly, so we do a
-    // lightweight lookup here (one indexed query, no RLS hop needed).
+    // Save note if provided — the RPC doesn't accept notes so we do a
+    // follow-up UPDATE scoped to this booking + user.
+    if (input.notes) {
+      const service = createSupabaseServiceClient();
+      await service
+        .from('bookings')
+        .update({ notes: input.notes })
+        .eq('id', (result as any).booking_id)
+        .eq('user_id', user.id);
+    }
+
     const { data: slotRow } = await supabase
       .from('slots')
       .select('space_id, spaces(slug)')
@@ -121,16 +129,28 @@ export async function updateBookingNote(
   bookingId: string,
   note: string,
 ): Promise<{ success: boolean; error?: string }> {
+  // Auth check with user client, then write with service client to avoid
+  // RLS UPDATE restrictions (bookings are typically insert-only via RPC).
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'UNAUTHENTICATED' };
 
-  const { error } = await supabase
+  // Verify the booking belongs to this user before updating
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('id, user_id, status')
+    .eq('id', bookingId)
+    .single();
+
+  if (!booking || booking.user_id !== user.id || booking.status !== 'confirmed') {
+    return { success: false, error: 'Booking not found or not yours.' };
+  }
+
+  const service = createSupabaseServiceClient();
+  const { error } = await service
     .from('bookings')
     .update({ notes: note.trim() || null })
-    .eq('id', bookingId)
-    .eq('user_id', user.id)  // only own bookings
-    .eq('status', 'confirmed');
+    .eq('id', bookingId);
 
   return error ? { success: false, error: error.message } : { success: true };
 }
