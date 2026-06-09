@@ -103,7 +103,7 @@ function CardMenu({
   space,
   onDeleteRequest,
 }: {
-  space:           { id: string; name: string };
+  space:           { id: string; name: string; slug: string };
   onDeleteRequest: (space: { id: string; name: string }) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -133,10 +133,17 @@ function CardMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 w-40 bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 top-10 w-44 bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+          <Link
+            href={`/space/${space.slug}/manage`}
+            onClick={() => setOpen(false)}
+            className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Space settings
+          </Link>
           <button
             onClick={e => { e.preventDefault(); setOpen(false); onDeleteRequest(space); }}
-            className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-gray-50 transition-colors"
+            className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-gray-50 transition-colors border-t border-gray-100"
           >
             Delete space
           </button>
@@ -175,7 +182,7 @@ function SpaceCard({
           {/* Three-dot menu — only for owners */}
           {isOwner && (
             <div className="absolute top-2 right-2">
-              <CardMenu space={{ id: space.id, name: space.name }} onDeleteRequest={onDeleteRequest} />
+              <CardMenu space={{ id: space.id, name: space.name, slug: space.slug }} onDeleteRequest={onDeleteRequest} />
             </div>
           )}
         </div>
