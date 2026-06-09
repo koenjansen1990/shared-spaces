@@ -611,7 +611,7 @@ export default function WeeklyCalendar({
                 if (fdBooked && fullDay) {
                   const firstBooker = fdBks[0];
                   const bookerName  = firstBooker ? firstName(profileMap.get(firstBooker.user_id)?.display_name ?? null) : '';
-                  const hasNote     = fdBks.some(b => b.notes);
+                  const noteText    = firstBooker?.notes ?? null;
                   return [(
                     <SlotCell
                       key={`${col}-fullday`}
@@ -622,10 +622,11 @@ export default function WeeklyCalendar({
                       <div className="mb-auto">
                         <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={3} />
                       </div>
-                      <div className="mt-auto">
-                        <p className="text-xs text-gray-400 leading-tight">
-                          {bookerName}{hasNote ? ' 💬' : ''}
-                        </p>
+                      {noteText && (
+                        <p className="text-xs text-gray-500 leading-snug mt-2 line-clamp-3">{noteText}</p>
+                      )}
+                      <div className="mt-auto pt-2">
+                        <p className="text-xs text-gray-400 leading-tight">{bookerName}</p>
                         <p className="text-sm font-semibold text-gray-900 leading-tight">Full day</p>
                       </div>
                     </SlotCell>
@@ -642,7 +643,7 @@ export default function WeeklyCalendar({
                   const mine       = slotBks.some(b => b.user_id === userId);
                   const firstBooker= slotBks[0];
                   const bookerName = firstBooker ? firstName(profileMap.get(firstBooker.user_id)?.display_name ?? null) : 'Available';
-                  const hasNote    = slotBks.some(b => b.notes);
+                  const noteText   = firstBooker?.notes ?? null;
                   return (
                     <SlotCell
                       key={`${col}-${label}`}
@@ -655,9 +656,12 @@ export default function WeeklyCalendar({
                           <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={3} />
                         </div>
                       )}
-                      <div className="mt-auto">
+                      {noteText && (
+                        <p className="text-xs text-gray-500 leading-snug mt-2 line-clamp-2">{noteText}</p>
+                      )}
+                      <div className="mt-auto pt-1">
                         <p className="text-xs text-gray-400 leading-tight">
-                          {slotBks.length > 0 ? `${bookerName}${hasNote ? ' 💬' : ''}` : 'Available'}
+                          {slotBks.length > 0 ? bookerName : 'Available'}
                         </p>
                         <p className="text-sm font-semibold text-gray-900 leading-tight">{label}</p>
                       </div>
@@ -711,13 +715,13 @@ export default function WeeklyCalendar({
                         // Full day booked — show single chip
                         const fdBks = fullDay ? getBookingsFor(fullDay.id, dateStr) : [];
                         if (fdBks.length > 0 && fullDay) {
-                          const mine    = fdBks.some(b => b.user_id === userId);
-                          const hasNote = fdBks.some(b => b.notes);
+                          const mine     = fdBks.some(b => b.user_id === userId);
+                          const noteText = fdBks[0]?.notes ?? null;
                           return (
                             <MonthSlotButton key="fullday" selected={mine} onClick={() => openModal(fullDay, date)}>
                               <span className="flex items-center justify-between gap-1">
                                 <span className="truncate text-xs font-medium text-gray-700">
-                                  Full day{hasNote ? ' 💬' : ''}
+                                  Full day{noteText ? ' · ' + noteText : ''}
                                 </span>
                                 <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={2} />
                               </span>
@@ -730,14 +734,14 @@ export default function WeeklyCalendar({
                           .map(label => daySlots.find(s => slotLabel(s) === label))
                           .filter((slot): slot is CalendarSlot => !!slot)
                           .map(slot => {
-                            const slotBks = getBookingsFor(slot.id, dateStr);
-                            const mine    = slotBks.some(b => b.user_id === userId);
-                            const hasNote = slotBks.some(b => b.notes);
+                            const slotBks  = getBookingsFor(slot.id, dateStr);
+                            const mine     = slotBks.some(b => b.user_id === userId);
+                            const noteText = slotBks[0]?.notes ?? null;
                             return (
                               <MonthSlotButton key={slot.id} selected={mine} onClick={() => openModal(slot, date)}>
                                 <span className="flex items-center justify-between gap-1">
                                   <span className="truncate text-xs font-medium text-gray-700">
-                                    {slotLabel(slot)}{hasNote ? ' 💬' : ''}
+                                    {slotLabel(slot)}{noteText ? ' · ' + noteText : ''}
                                   </span>
                                   {slotBks.length > 0 && (
                                     <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={2} />
