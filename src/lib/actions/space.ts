@@ -64,6 +64,16 @@ export async function createSpace(
   // so the anon-key client fails the RLS policy even though getUser() works.
   const serviceClient = createSupabaseServiceClient();
 
+  // Map new type names → DB enum values (migration may not have run yet).
+  // Once migration_space_type_rename.sql is applied this is a no-op.
+  const DB_SPACE_TYPE: Record<string, string> = {
+    weekly:  'workplace',
+    monthly: 'holiday_home',
+  };
+  const dbSpaceType = input.space_type
+    ? (DB_SPACE_TYPE[input.space_type] ?? input.space_type)
+    : null;
+
   const { data: space, error: spaceError } = await (serviceClient
     .from('spaces') as any)
     .insert({
@@ -72,7 +82,7 @@ export async function createSpace(
       description: input.description?.trim() || null,
       owner_id:    user.id,
       plan_type:   'free',
-      space_type:  input.space_type ?? null,
+      space_type:  dbSpaceType,
     })
     .select('id, slug')
     .single();

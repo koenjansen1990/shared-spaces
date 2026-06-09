@@ -129,7 +129,10 @@ export async function saveSpaceType(spaceId: string, spaceType: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
   const service = createSupabaseServiceClient();
-  const { error } = await (service.from('spaces') as any).update({ space_type: spaceType }).eq('id', spaceId);
+  // Map new type names → DB enum values until migration is applied.
+  const DB_SPACE_TYPE: Record<string, string> = { weekly: 'workplace', monthly: 'holiday_home' };
+  const dbSpaceType = DB_SPACE_TYPE[spaceType] ?? spaceType;
+  const { error } = await (service.from('spaces') as any).update({ space_type: dbSpaceType }).eq('id', spaceId);
   return error ? { success: false as const, error: error.message } : { success: true as const };
 }
 
