@@ -151,3 +151,24 @@ export async function createSpace(
 
   redirect(`/space/${space.slug}/setup`);
 }
+
+export async function deleteSpace(spaceId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'UNAUTHENTICATED' };
+
+  // Only the owner can delete
+  const { data: space } = await supabase
+    .from('spaces')
+    .select('owner_id')
+    .eq('id', spaceId)
+    .single();
+
+  if (!space || space.owner_id !== user.id)
+    return { success: false, error: 'Only the owner can delete a space.' };
+
+  const serviceClient = createSupabaseServiceClient();
+  const { error } = await serviceClient.from('spaces').delete().eq('id', spaceId);
+
+  return error ? { success: false, error: error.message } : { success: true };
+}
