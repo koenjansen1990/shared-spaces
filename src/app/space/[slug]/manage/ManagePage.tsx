@@ -21,7 +21,7 @@ interface Props {
 
 export default function ManagePage({ space, slug, hoursPerWeek: initHours, nightsPerYear: initNights, maxConsecutive: initConsecutive, advanceDays: initAdvance }: Props) {
   const router = useRouter();
-  const spaceType = (space as any).space_type as 'weekly' | 'monthly' | null;
+  const spaceType = (space as any).space_type as string | null;
 
   const [name,        setName]        = useState(space.name);
   const [description, setDescription] = useState(space.description ?? '');

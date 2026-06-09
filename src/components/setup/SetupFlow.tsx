@@ -26,8 +26,8 @@ export default function SetupFlow({ space }: Props) {
   const [error, setError]            = useState<string | null>(null);
 
   const searchParams = useSearchParams();
-  const existingType = (space as any).space_type as 'weekly' | 'monthly' | null ?? null;
-  const [spaceType, setSpaceType] = useState<'weekly' | 'monthly' | null>(existingType);
+  const existingType = ((space as any).space_type as string | null) ?? null;
+  const [spaceType, setSpaceType] = useState<string | null>(existingType);
   const initialStep = existingType
     ? (searchParams.get('step') === '2' ? 2 : 1)
     : 0;
@@ -59,7 +59,7 @@ export default function SetupFlow({ space }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleStep0(type: 'weekly' | 'monthly') {
+  function handleStep0(type: string) {
     setSpaceType(type);
     startTransition(async () => {
       await saveSpaceType(space.id, type);

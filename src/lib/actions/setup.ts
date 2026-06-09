@@ -124,7 +124,7 @@ export async function completeOnboarding(spaceId: string, welcomeMessage: string
 }
 
 // Step 0: save space type (weekly | monthly)
-export async function saveSpaceType(spaceId: string, spaceType: 'weekly' | 'monthly') {
+export async function saveSpaceType(spaceId: string, spaceType: string) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
