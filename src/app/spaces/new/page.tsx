@@ -19,7 +19,7 @@ export default async function NewSpacePage() {
 
   const ownedCount = count ?? 0;
 
-  if (ownedCount >= 1) {
+  if (ownedCount >= 2) {
     return <PaywallScreen />;
   }
 
