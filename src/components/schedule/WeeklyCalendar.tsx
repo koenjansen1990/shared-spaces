@@ -232,6 +232,12 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
 
   const [pending, setPending] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
+  const [note,    setNote]    = useState('');
+
+  const myProfile = profiles.find(p => p.id === userId);
+  const myInitials = myProfile?.display_name
+    ? myProfile.display_name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
 
   const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -239,7 +245,7 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
 
   async function handleBook() {
     setPending(true); setError(null);
-    const r = await createBooking({ slot_id: slot.id, booking_date: date });
+    const r = await createBooking({ slot_id: slot.id, booking_date: date, notes: note.trim() || null });
     setPending(false);
     if (r.success) { onBooked(slot.id, date, r.booking_id); onClose(); }
     else if (r.error === 'CONFLICT') setError('conflict');
@@ -277,19 +283,53 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
       >
         <div className="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto -mt-1 mb-1" />
 
+        {/* X close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+          </svg>
+        </button>
+
         <div>
-          <p className="text-xs text-gray-400 uppercase tracking-widest">{dateLabel}</p>
-          <h2 className="text-2xl font-bold text-gray-900 mt-0.5">{slotLabel(slot)}</h2>
+          <p className="text-sm text-gray-400">{dateLabel}</p>
+          <h2 className="text-3xl font-bold text-gray-900 mt-0.5">{slotLabel(slot)}</h2>
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-400">{hours}h</span>
-          {!booked && (
-            <span className={`text-xs ${canAfford ? 'text-gray-400' : 'text-red-500'}`}>
-              {canAfford ? `${weeklyRemaining}h left this week` : `Need ${hours}h, have ${weeklyRemaining}h`}
+        {/* Info pill */}
+        <div className="flex items-center justify-between bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+          <span className="text-sm font-medium text-gray-900">{hours} hour{hours !== 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm ${canAfford ? 'text-gray-400' : 'text-red-500'}`}>
+              {booked
+                ? 'Already booked'
+                : canAfford
+                  ? `${weeklyRemaining}h left this week`
+                  : `Need ${hours}h, have ${weeklyRemaining}h`}
             </span>
-          )}
+            {myProfile?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={myProfile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover ring-1 ring-white" />
+            ) : (
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold text-white ring-1 ring-white ${avatarColor(userId)}`}>
+                {myInitials}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Note textarea — only for new bookings */}
+        {!booked && error !== 'conflict' && (
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="Leave a note..."
+            rows={2}
+            className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
+          />
+        )}
 
         {error && error !== 'conflict' && <p className="text-red-500 text-sm">{error}</p>}
 
@@ -302,7 +342,7 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
                   : 'You already have a booking for this date. Switch?'}
               </p>
               <button onClick={handleSwap} disabled={pending}
-                className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-lg">
+                className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-base">
                 {pending ? 'Switching…' : 'Switch to full day'}
               </button>
             </>
@@ -313,13 +353,10 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
             </button>
           ) : (
             <button onClick={handleBook} disabled={pending || !canAfford}
-              className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-lg">
-              {pending ? 'Booking…' : !canAfford ? 'Not enough hours' : `Book · ${hours}h`}
+              className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-base">
+              {pending ? 'Booking…' : !canAfford ? 'Not enough hours' : 'Book slot'}
             </button>
           )}
-          <button onClick={onClose} className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
-            Close
-          </button>
         </div>
       </div>
     </div>

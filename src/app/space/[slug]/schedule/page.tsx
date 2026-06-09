@@ -129,6 +129,7 @@ export default async function SchedulePage({ params }: Props) {
           spaceSlug={slug}
           spaceInfo={spaceInfo}
           membersList={membersList.map(m => ({ userId: m.userId, displayName: m.displayName, avatarUrl: m.avatarUrl }))}
+          nightsPerYear={(space as any).holiday_nights_per_year ?? 30}
         />
       ) : (
         <WeeklyCalendar

@@ -34,14 +34,15 @@ export interface HolidayMemberInfo {
 }
 
 interface Props {
-  userId:      string;
-  spaceId:     string;
-  spaceSlug:   string;
-  isAdmin:     boolean;
-  bookings:    HolidayBooking[];
-  profiles:    HolidayProfile[];
-  spaceInfo:   HolidaySpaceInfo;
-  membersList: HolidayMemberInfo[];
+  userId:        string;
+  spaceId:       string;
+  spaceSlug:     string;
+  isAdmin:       boolean;
+  bookings:      HolidayBooking[];
+  profiles:      HolidayProfile[];
+  spaceInfo:     HolidaySpaceInfo;
+  membersList:   HolidayMemberInfo[];
+  nightsPerYear?: number;
 }
 
 // ── Styles — matches WeeklyCalendar slot states ────────────────
@@ -122,21 +123,27 @@ type ModalState =
   | { mode: 'existing'; booking: HolidayBooking };
 
 function HolidayModal({
-  modal, userId, spaceId, profiles, onBooked, onUpdated, onCancelled, onClose,
+  modal, userId, spaceId, profiles, nightsRemaining, onBooked, onUpdated, onCancelled, onClose,
 }: {
-  modal:        ModalState;
-  userId:       string;
-  spaceId:      string;
-  profiles:     HolidayProfile[];
-  onBooked:     (booking: HolidayBooking) => void;
-  onUpdated:    (booking: HolidayBooking) => void;
-  onCancelled:  (id: string) => void;
-  onClose:      () => void;
+  modal:          ModalState;
+  userId:         string;
+  spaceId:        string;
+  profiles:       HolidayProfile[];
+  nightsRemaining: number;
+  onBooked:       (booking: HolidayBooking) => void;
+  onUpdated:      (booking: HolidayBooking) => void;
+  onCancelled:    (id: string) => void;
+  onClose:        () => void;
 }) {
   const isNew    = modal.mode === 'new';
   const existing = isNew ? null : modal.booking;
   const isMine   = existing?.userId === userId;
   const profile  = existing ? profiles.find(p => p.id === existing.userId) : null;
+
+  const myProfile  = profiles.find(p => p.id === userId);
+  const myInitials = myProfile?.display_name
+    ? myProfile.display_name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
 
   const [checkIn,  setCheckIn]  = useState(isNew ? modal.checkIn : existing!.checkIn);
   const [checkOut, setCheckOut] = useState(isNew ? modal.checkIn : existing!.checkOut);
@@ -153,6 +160,13 @@ function HolidayModal({
 
   const checkInLabel  = new Date(checkIn  + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const checkOutLabel = new Date(checkOut + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Format date as dd/mm/yyyy for display in inputs
+  function formatDateDisplay(iso: string): string {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
 
   async function handleBook() {
     if (checkOut < checkIn) { setError('Check-out must be after check-in.'); return; }
@@ -195,11 +209,21 @@ function HolidayModal({
       >
         <div className="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto -mt-1 mb-1" />
 
+        {/* X close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+          </svg>
+        </button>
+
         {/* Header */}
         {isNew ? (
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest">New booking</p>
-            <h2 className="text-2xl font-bold text-gray-900 mt-0.5">Choose your dates</h2>
+            <p className="text-sm text-gray-400">New booking</p>
+            <h2 className="text-3xl font-bold text-gray-900 mt-0.5">Pick your dates</h2>
           </div>
         ) : (
           <div className="flex items-center gap-3">
@@ -211,42 +235,57 @@ function HolidayModal({
               }
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest">Booked by</p>
-              <h2 className="text-xl font-bold text-gray-900">{profile?.display_name ?? 'Member'}</h2>
+              <p className="text-sm text-gray-400">Booked by</p>
+              <h2 className="text-2xl font-bold text-gray-900">{profile?.display_name ?? 'Member'}</h2>
             </div>
           </div>
         )}
 
         {/* Date range */}
         {isNew ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Check-in</label>
-                <input
-                  type="date"
-                  value={checkIn}
-                  min={toDateStr(new Date())}
-                  onChange={e => { setCheckIn(e.target.value); if (e.target.value > checkOut) setCheckOut(e.target.value); }}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 transition-colors"
-                />
+                <label className="text-xs font-medium text-gray-400">Check-in</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={checkIn}
+                    min={toDateStr(new Date())}
+                    onChange={e => { setCheckIn(e.target.value); if (e.target.value > checkOut) setCheckOut(e.target.value); }}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Check-out</label>
-                <input
-                  type="date"
-                  value={checkOut}
-                  min={checkIn}
-                  onChange={e => setCheckOut(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 transition-colors"
-                />
+                <label className="text-xs font-medium text-gray-400">Check-out</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={checkOut}
+                    min={checkIn}
+                    onChange={e => setCheckOut(e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
               </div>
             </div>
-            <p className="text-sm text-gray-400 text-center">
-              {checkOut >= checkIn
-                ? <><strong className="text-gray-700">{nights}</strong> night{nights !== 1 ? 's' : ''}</>
-                : null}
-            </p>
+
+            {/* Nights + remaining pill */}
+            <div className="flex items-center justify-between bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+              <span className="text-sm font-medium text-gray-900">{nights} night{nights !== 1 ? 's' : ''}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">{nightsRemaining} days left this year</span>
+                {myProfile?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={myProfile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover ring-1 ring-white" />
+                ) : (
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold text-white ring-1 ring-white ${avatarColorClass(userId)}`}>
+                    {myInitials}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
@@ -266,24 +305,19 @@ function HolidayModal({
         )}
 
         {/* Note */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">
-            {isNew ? 'Leave a note' : 'Note'}
-          </label>
-          {isNew || isMine ? (
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="Bringing the dog 🐕, Birthday week 🎉…"
-              rows={2}
-              className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
-            />
-          ) : (
-            existing?.note
-              ? <p className="text-sm text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5">{existing.note}</p>
-              : <p className="text-sm text-gray-300 italic">No note left.</p>
-          )}
-        </div>
+        {isNew || isMine ? (
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="Leave a note..."
+            rows={2}
+            className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
+          />
+        ) : (
+          existing?.note
+            ? <p className="text-sm text-gray-600 bg-gray-50 rounded-2xl px-4 py-3">{existing.note}</p>
+            : null
+        )}
 
         {error && <p className="text-sm text-red-500">{error}</p>}
 
@@ -295,7 +329,7 @@ function HolidayModal({
               disabled={pending || checkOut < checkIn}
               className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-base"
             >
-              {pending ? 'Booking…' : `Book · ${nights} night${nights !== 1 ? 's' : ''}`}
+              {pending ? 'Booking…' : `Book ${nights} night${nights !== 1 ? 's' : ''}`}
             </button>
           ) : isMine ? (
             <>
@@ -317,9 +351,6 @@ function HolidayModal({
               </button>
             </>
           ) : null}
-          <button onClick={onClose} className="w-full py-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
-            Close
-          </button>
         </div>
       </div>
     </div>
@@ -334,6 +365,7 @@ export default function HolidayCalendar({
   profiles,
   spaceInfo,
   membersList,
+  nightsPerYear = 30,
 }: Props) {
   const [bookings,     setBookings]     = useState(initialBookings);
   const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
@@ -360,7 +392,11 @@ export default function HolidayCalendar({
   }
 
   // Nights used this year per member
-  const yearStr = String(new Date().getFullYear());
+  const yearStr       = String(new Date().getFullYear());
+  const myNightsUsed  = bookings
+    .filter(b => b.userId === userId && b.checkIn.startsWith(yearStr))
+    .reduce((sum, b) => sum + Math.round((new Date(b.checkOut).getTime() - new Date(b.checkIn).getTime()) / 86400000) + 1, 0);
+  const myNightsLeft  = Math.max(0, nightsPerYear - myNightsUsed);
   function getNightsUsed(memberId: string): number {
     return bookings
       .filter(b => b.userId === memberId && b.checkIn.startsWith(yearStr))
@@ -552,6 +588,7 @@ export default function HolidayCalendar({
           userId={userId}
           spaceId={spaceId}
           profiles={profiles}
+          nightsRemaining={myNightsLeft}
           onBooked={handleBooked}
           onUpdated={handleUpdated}
           onCancelled={handleCancelled}

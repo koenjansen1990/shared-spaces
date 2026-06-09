@@ -277,6 +277,7 @@ export type CreateSlotInput = {
 export type CreateBookingInput = {
   slot_id:      string;
   booking_date: string;
+  notes?:       string | null;
 };
 
 export type UpdateSpaceRuleInput = {
