@@ -101,19 +101,20 @@ function Avatar({ profile, size = 'sm' }: { profile?: CalendarProfile; size?: 'x
   );
 }
 
-function AvatarStack({ userIds, profiles, max = 3 }: { userIds: string[]; profiles: CalendarProfile[]; max?: number }) {
+function AvatarStack({ userIds, profiles, max = 3, size = 'xs' }: { userIds: string[]; profiles: CalendarProfile[]; max?: number; size?: 'xs' | 'sm' }) {
   const shown  = userIds.slice(0, max);
   const extra  = userIds.length - shown.length;
   const lookup = new Map(profiles.map(p => [p.id, p]));
+  const extraDim = size === 'sm' ? 'w-6 h-6 text-[9px]' : 'w-4 h-4 text-[7px]';
   return (
     <div className="flex items-center">
       {shown.map((id, i) => (
         <div key={id} style={{ marginLeft: i > 0 ? '-4px' : 0, zIndex: shown.length - i }} className="relative">
-          <Avatar profile={lookup.get(id)} size="xs" />
+          <Avatar profile={lookup.get(id)} size={size} />
         </div>
       ))}
       {extra > 0 && (
-        <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[7px] font-semibold text-gray-600 ring-1 ring-white ml-[-4px]">
+        <div className={`${extraDim} rounded-full bg-gray-200 flex items-center justify-center font-semibold text-gray-600 ring-1 ring-white ml-[-4px]`}>
           +{extra}
         </div>
       )}
@@ -630,7 +631,7 @@ export default function WeeklyCalendar({
                       onClick={() => openModal(fullDay, date)}
                     >
                       <div className="flex flex-col gap-2">
-                        <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={3} />
+                        <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={3} size="sm" />
                         {noteText && (
                           <div className="bg-white/60 rounded-xl px-2.5 py-1.5">
                             <p className="text-xs text-gray-600 leading-snug line-clamp-3">{noteText}</p>
@@ -665,7 +666,7 @@ export default function WeeklyCalendar({
                     >
                       {slotBks.length > 0 && (
                         <div className="flex flex-col gap-2">
-                          <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={3} />
+                          <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={3} size="sm" />
                           {noteText && (
                             <div className="bg-white/60 rounded-xl px-2.5 py-1.5">
                               <p className="text-xs text-gray-600 leading-snug line-clamp-2">{noteText}</p>
