@@ -116,6 +116,25 @@ export async function cancelBooking(bookingId: string): Promise<{ success: boole
   return { success: true };
 }
 
+// updateBookingNote — lets the booking owner edit the note on an existing booking.
+export async function updateBookingNote(
+  bookingId: string,
+  note: string,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'UNAUTHENTICATED' };
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({ notes: note.trim() || null })
+    .eq('id', bookingId)
+    .eq('user_id', user.id)  // only own bookings
+    .eq('status', 'confirmed');
+
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
 // cancelMyBookingsForDate — cancels all of the current user's confirmed bookings
 // for a given space + date. Used when switching from half-day to full day.
 export async function cancelMyBookingsForDate(

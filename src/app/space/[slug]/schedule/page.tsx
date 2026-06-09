@@ -60,7 +60,7 @@ export default async function SchedulePage({ params }: Props) {
 
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('id, slot_id, booking_date, user_id, status, credits_consumed')
+    .select('id, slot_id, booking_date, user_id, status, credits_consumed, notes')
     .eq('space_id', space.id)
     .gte('booking_date', toISODate(from))
     .lte('booking_date', toISODate(to))

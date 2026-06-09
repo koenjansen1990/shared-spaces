@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { createBooking, cancelBooking, cancelMyBookingsForDate } from '@/lib/actions/booking';
+import { createBooking, cancelBooking, cancelMyBookingsForDate, updateBookingNote } from '@/lib/actions/booking';
 import { generateInviteLink } from '@/lib/actions/profile';
 import type { Slot, Booking } from '@/types';
 
@@ -126,7 +126,7 @@ function AvatarStack({ userIds, profiles, max = 3 }: { userIds: string[]; profil
 type ModalSlot = {
   slot:          Slot;
   date:          string;
-  booking:       Booking | null;
+  booking:       CalendarBooking | null;
   count:         number;
   myDayBookings: CalendarBooking[];
 };
@@ -216,10 +216,11 @@ function InviteCopyButton({ spaceId }: { spaceId: string }) {
 
 // ── SlotModal ──────────────────────────────────────────────────────────────────
 
-function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyRemaining }: {
+function SlotModal({ item, onClose, onBooked, onNoteUpdated, userId, spaceId, profiles, weeklyRemaining }: {
   item:            ModalSlot;
   onClose:         () => void;
   onBooked:        (slotId: string, date: string, bookingId: string | false) => void;
+  onNoteUpdated:   (bookingId: string, note: string | null) => void;
   userId:          string;
   spaceId:         string;
   profiles:        CalendarProfile[];
@@ -227,12 +228,16 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
 }) {
   const { slot, date, booking, myDayBookings } = item;
   const hours     = slot.credit_cost;
+  const isMine    = !!booking && booking.user_id === userId;
   const booked    = !!booking && booking.status === 'confirmed';
   const canAfford = booked || weeklyRemaining >= hours;
 
+  const originalNote = booking?.notes ?? '';
   const [pending, setPending] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
-  const [note,    setNote]    = useState('');
+  const [note,    setNote]    = useState(originalNote);
+
+  const noteChanged = isMine && note !== originalNote;
 
   const myProfile = profiles.find(p => p.id === userId);
   const myInitials = myProfile?.display_name
@@ -250,6 +255,16 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
     if (r.success) { onBooked(slot.id, date, r.booking_id); onClose(); }
     else if (r.error === 'CONFLICT') setError('conflict');
     else setError(BOOKING_ERRORS[r.error] ?? r.error);
+  }
+
+  async function handleSaveNote() {
+    if (!booking) return;
+    setPending(true); setError(null);
+    const r = await updateBookingNote(booking.id, note);
+    setPending(false);
+    if (!r.success) { setError(r.error ?? 'Something went wrong.'); return; }
+    onNoteUpdated(booking.id, note.trim() || null);
+    onClose();
   }
 
   async function handleSwap() {
@@ -304,7 +319,7 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
           <div className="flex items-center gap-2">
             <span className={`text-sm ${canAfford ? 'text-gray-400' : 'text-red-500'}`}>
               {booked
-                ? 'Already booked'
+                ? `${weeklyRemaining}h left this week`
                 : canAfford
                   ? `${weeklyRemaining}h left this week`
                   : `Need ${hours}h, have ${weeklyRemaining}h`}
@@ -320,15 +335,30 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
           </div>
         </div>
 
-        {/* Note textarea — only for new bookings */}
-        {!booked && error !== 'conflict' && (
-          <textarea
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            placeholder="Leave a note..."
-            rows={2}
-            className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
-          />
+        {/* Note — all states */}
+        {error !== 'conflict' && (
+          !booked ? (
+            // New booking: editable note
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Leave a note..."
+              rows={2}
+              className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
+            />
+          ) : isMine ? (
+            // My existing booking: editable note
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Leave a note..."
+              rows={2}
+              className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
+            />
+          ) : booking?.notes ? (
+            // Someone else's booking with a note: read-only
+            <p className="text-sm text-gray-600 bg-gray-50 rounded-2xl px-4 py-3">{booking.notes}</p>
+          ) : null
         )}
 
         {error && error !== 'conflict' && <p className="text-red-500 text-sm">{error}</p>}
@@ -346,17 +376,25 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
                 {pending ? 'Switching…' : 'Switch to full day'}
               </button>
             </>
-          ) : booked ? (
-            <button onClick={handleCancel} disabled={pending}
-              className="w-full py-4 rounded-2xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors font-semibold">
-              {pending ? 'Cancelling…' : 'Cancel booking'}
-            </button>
-          ) : (
+          ) : booked && isMine ? (
+            <>
+              {noteChanged && (
+                <button onClick={handleSaveNote} disabled={pending}
+                  className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-base">
+                  {pending ? 'Saving…' : 'Save note'}
+                </button>
+              )}
+              <button onClick={handleCancel} disabled={pending}
+                className="w-full py-4 rounded-2xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors font-semibold">
+                {pending ? 'Cancelling…' : 'Cancel booking'}
+              </button>
+            </>
+          ) : !booked ? (
             <button onClick={handleBook} disabled={pending || !canAfford}
               className="w-full py-4 rounded-2xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors font-semibold text-base">
               {pending ? 'Booking…' : !canAfford ? 'Not enough hours' : 'Book slot'}
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -366,7 +404,7 @@ function SlotModal({ item, onClose, onBooked, userId, spaceId, profiles, weeklyR
 // ── Exports ────────────────────────────────────────────────────────────────────
 
 export type CalendarSlot    = Slot & { resource_name: string };
-export type CalendarBooking = Pick<Booking, 'id' | 'slot_id' | 'booking_date' | 'user_id' | 'status' | 'credits_consumed'>;
+export type CalendarBooking = Pick<Booking, 'id' | 'slot_id' | 'booking_date' | 'user_id' | 'status' | 'credits_consumed' | 'notes'>;
 export type CalendarProfile = { id: string; display_name: string | null; avatar_url: string | null };
 export type SpaceInfo       = { name: string; welcomeMessage: string | null; address: string | null; heroImageUrl: string | null };
 export type MemberInfo      = { userId: string; displayName: string | null; avatarUrl: string | null; weeklyAllowance: number };
@@ -399,11 +437,15 @@ export default function WeeklyCalendar({
 
   const today = toISODate(new Date());
 
+  const handleNoteUpdated = useCallback((bookingId: string, note: string | null) => {
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, notes: note } : b));
+  }, []);
+
   const handleBooked = useCallback((slotId: string, date: string, bookingId: string | false) => {
     const cost = slots.find(s => s.id === slotId)?.credit_cost ?? 0;
     setBookings(prev =>
       bookingId !== false
-        ? [...prev, { id: bookingId, slot_id: slotId, booking_date: date, user_id: userId, status: 'confirmed' as const, credits_consumed: cost }]
+        ? [...prev, { id: bookingId, slot_id: slotId, booking_date: date, user_id: userId, status: 'confirmed' as const, credits_consumed: cost, notes: null }]
         : prev.map(b => b.slot_id === slotId && b.booking_date === date && b.user_id === userId
             ? { ...b, status: 'cancelled' as const } : b)
     );
@@ -428,7 +470,7 @@ export default function WeeklyCalendar({
     const myDayBookings = bookings.filter(
       b => b.booking_date === dateStr && b.user_id === userId && b.status === 'confirmed' && b.slot_id !== slot.id
     );
-    setModal({ slot, date: dateStr, booking: (bs.find(b => b.user_id === userId) ?? null) as Booking | null, count: bs.length, myDayBookings });
+    setModal({ slot, date: dateStr, booking: bs.find(b => b.user_id === userId) ?? null, count: bs.length, myDayBookings });
   }
 
   function slotsForDay(date: Date): CalendarSlot[] {
@@ -786,6 +828,7 @@ export default function WeeklyCalendar({
           item={modal}
           onClose={() => setModal(null)}
           onBooked={handleBooked}
+          onNoteUpdated={handleNoteUpdated}
           userId={userId}
           spaceId={spaceId}
           profiles={profiles}
