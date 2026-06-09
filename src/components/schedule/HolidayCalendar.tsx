@@ -370,6 +370,7 @@ export default function HolidayCalendar({
   const [bookings,     setBookings]     = useState(initialBookings);
   const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [modal,        setModal]        = useState<ModalState | null>(null);
+  const [panelOpen,    setPanelOpen]    = useState(false);
 
   const todayStr    = toDateStr(new Date());
   const cells       = buildMonthGrid(currentMonth);
@@ -409,10 +410,10 @@ export default function HolidayCalendar({
   }
 
   return (
-    <div className="flex gap-3 h-full">
+    <div className="flex gap-3 h-full relative">
 
       {/* ── Calendar panel ───────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-gray-200 overflow-hidden mb-16 md:mb-0">
 
         {/* Toolbar */}
         <div className="flex-none flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -520,8 +521,8 @@ export default function HolidayCalendar({
         </div>
       </div>
 
-      {/* ── Side panel ───────────────────────────────────────── */}
-      <div className="w-72 xl:w-80 flex-shrink-0 bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden">
+      {/* ── Side panel (desktop) ─────────────────────────────── */}
+      <div className="hidden md:flex w-72 xl:w-80 flex-shrink-0 bg-white rounded-2xl border border-gray-200 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto min-h-0">
           <div>
             {spaceInfo.heroImageUrl && (
@@ -577,6 +578,98 @@ export default function HolidayCalendar({
             </div>
           </div>
           <div className="px-5 pb-5">
+            <InviteCopyButton spaceId={spaceId} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mobile pill + bottom sheet ───────────────────────── */}
+      <div className="md:hidden">
+        {/* Floating pill */}
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 bg-gray-900 text-white rounded-full pl-1.5 pr-5 py-1.5 shadow-lg"
+        >
+          {spaceInfo.heroImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={spaceInfo.heroImageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gray-700 shrink-0" />
+          )}
+          <span className="text-sm font-semibold truncate max-w-[180px]">{spaceInfo.name}</span>
+        </button>
+
+        {/* Backdrop */}
+        {panelOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            onClick={() => setPanelOpen(false)}
+          />
+        )}
+
+        {/* Bottom sheet */}
+        <div
+          className={`fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl flex flex-col overflow-hidden transition-transform duration-300 ease-out ${panelOpen ? 'translate-y-0' : 'translate-y-full'}`}
+          style={{ maxHeight: '85vh' }}
+        >
+          <div className="flex-none flex justify-center pt-3 pb-2">
+            <div className="w-10 h-1 bg-gray-200 rounded-full" />
+          </div>
+
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div>
+              {spaceInfo.heroImageUrl && (
+                <div className="relative" style={{ height: '180px' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={spaceInfo.heroImageUrl} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, white 100%)' }} />
+                </div>
+              )}
+              <div className="px-5 flex items-center" style={{ height: '56px' }}>
+                <h2 className="text-base font-semibold text-gray-900">{spaceInfo.name}</h2>
+              </div>
+              {spaceInfo.welcomeMessage && (
+                <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
+              )}
+              <hr className="border-gray-100 mx-5" />
+            </div>
+
+            {spaceInfo.address && (
+              <div className="px-5 py-5 space-y-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Location</p>
+                <div className="space-y-1.5">
+                  <p className="text-sm text-gray-700 whitespace-pre-line leading-snug">{spaceInfo.address}</p>
+                  <a
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(spaceInfo.address.replace(/\n/g, ', '))}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                  >
+                    View on map →
+                  </a>
+                </div>
+              </div>
+            )}
+
+            <div className="p-5 space-y-4">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Members</p>
+              <div className="space-y-3">
+                {membersList.map(m => (
+                  <div key={m.userId} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0 overflow-hidden ${m.avatarUrl ? '' : avatarColorClass(m.userId)}`}>
+                      {m.avatarUrl
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={m.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        : getInitials(m.displayName, m.userId)}
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-gray-800 truncate">{m.displayName ?? 'Unknown'}</span>
+                    <span className="text-xs text-gray-400 tabular-nums shrink-0">{getNightsUsed(m.userId)}n this year</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-none px-5 pb-8 pt-2">
             <InviteCopyButton spaceId={spaceId} />
           </div>
         </div>
