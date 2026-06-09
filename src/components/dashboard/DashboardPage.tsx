@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
@@ -99,6 +99,53 @@ function DeleteModal({
 
 // ── Space card ───────────────────────────────────────────
 
+function CardMenu({
+  space,
+  onDeleteRequest,
+}: {
+  space:           { id: string; name: string };
+  onDeleteRequest: (space: { id: string; name: string }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative" onClick={e => e.preventDefault()}>
+      <button
+        onClick={e => { e.preventDefault(); setOpen(o => !o); }}
+        className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity"
+        style={{ background: 'rgba(0,0,0,0.2)' }}
+      >
+        {/* Three dots */}
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="3"  cy="8" r="1.5" fill="white" />
+          <circle cx="8"  cy="8" r="1.5" fill="white" />
+          <circle cx="13" cy="8" r="1.5" fill="white" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-10 w-40 bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+          <button
+            onClick={e => { e.preventDefault(); setOpen(false); onDeleteRequest(space); }}
+            className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-gray-50 transition-colors"
+          >
+            Delete space
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SpaceCard({
   membership,
   onDeleteRequest,
@@ -116,16 +163,22 @@ function SpaceCard({
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
       <Link href={`/space/${space.slug}/schedule`} className="flex flex-col flex-1">
-        {/* Hero */}
-        {space.hero_image_url ? (
-          <div className="relative h-32 w-full">
+        {/* Hero — with floating menu button */}
+        <div className="relative h-32 w-full">
+          {space.hero_image_url ? (
             <Image src={space.hero_image_url} alt={space.name} fill className="object-cover" />
-          </div>
-        ) : (
-          <div className="h-32 w-full bg-gray-100 flex items-center justify-center text-4xl">
-            {typeEmoji}
-          </div>
-        )}
+          ) : (
+            <div className="h-full w-full bg-gray-100 flex items-center justify-center text-4xl">
+              {typeEmoji}
+            </div>
+          )}
+          {/* Three-dot menu — only for owners */}
+          {isOwner && (
+            <div className="absolute top-2 right-2">
+              <CardMenu space={{ id: space.id, name: space.name }} onDeleteRequest={onDeleteRequest} />
+            </div>
+          )}
+        </div>
 
         <div className="p-4 flex flex-col gap-1 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -151,25 +204,13 @@ function SpaceCard({
         </div>
       </Link>
 
-      {/* Card footer */}
-      {(isAdmin && setupIncomplete) || isOwner ? (
-        <div className="px-4 pb-4 flex items-center justify-between">
-          {isAdmin && setupIncomplete ? (
-            <Link href={`/space/${space.slug}/setup`} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
-              Continue setup →
-            </Link>
-          ) : <span />}
-
-          {isOwner && (
-            <button
-              onClick={e => { e.preventDefault(); onDeleteRequest({ id: space.id, name: space.name }); }}
-              className="text-xs text-gray-300 hover:text-red-500 transition-colors"
-            >
-              Delete
-            </button>
-          )}
+      {isAdmin && setupIncomplete && (
+        <div className="px-4 pb-4">
+          <Link href={`/space/${space.slug}/setup`} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
+            Continue setup →
+          </Link>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
