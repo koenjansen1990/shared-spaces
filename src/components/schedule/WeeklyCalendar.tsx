@@ -655,7 +655,9 @@ export default function WeeklyCalendar({
                 return (['Morning', 'Afternoon'] as const).map((label, row) => {
                   const slot      = daySlots.find(s => slotLabel(s) === label);
                   if (!slot) return (
-                    <div key={`${col}-${label}`} style={{ gridColumn: col + 1, gridRow: row + 1 }} />
+                    <div key={`${col}-${label}`} style={{ gridColumn: col + 1, gridRow: row + 1 }} className="p-1">
+                      <div style={SLOT_STYLE.default} className="w-full h-full" />
+                    </div>
                   );
                   const slotBks    = getBookingsFor(slot.id, dateStr);
                   const mine       = slotBks.some(b => b.user_id === userId);
