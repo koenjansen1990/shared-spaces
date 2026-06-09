@@ -159,7 +159,7 @@ function SlotCell({ children, gridStyle, selected, onClick }: {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={style}
-        className="w-full h-full px-3 py-3 text-left flex flex-col transition-all"
+        className="w-full h-full px-1 sm:px-3 py-3 text-left flex flex-col transition-all"
       >
         {children}
       </button>
@@ -428,6 +428,7 @@ interface Props {
   isAdmin:         boolean;
   spaceSlug:       string;
   spaceId:         string;
+  spaceType?:      string | null;
   weeklyAllowance: number;
   weeklyUsed:      number;
   spaceInfo:       SpaceInfo;
@@ -437,9 +438,10 @@ interface Props {
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 export default function WeeklyCalendar({
-  slots, bookings: initial, profiles, userId, isAdmin, spaceSlug, spaceId,
+  slots, bookings: initial, profiles, userId, isAdmin, spaceSlug, spaceId, spaceType,
   weeklyAllowance, weeklyUsed: initialWeeklyUsed, spaceInfo, membersList,
 }: Props) {
+  const isWeeklyType = spaceType === 'weekly' || spaceType === 'workplace';
   const [view,        setView]        = useState<'week' | 'month'>('week');
   const [anchor,      setAnchor]      = useState(() => new Date());
   const [bookings,    setBookings]    = useState(initial);
@@ -550,7 +552,7 @@ export default function WeeklyCalendar({
       </div>
 
       {/* ── Calendar ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-gray-200 overflow-hidden mb-16 md:mb-0">
+      <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
 
         {/* Toolbar */}
         <div className="flex-none flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -563,15 +565,17 @@ export default function WeeklyCalendar({
             <button onClick={goToday} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
               Today
             </button>
-            <div className="flex items-center bg-gray-100 rounded-xl p-0.5">
-              {(['week', 'month'] as const).map(v => (
-                <button key={v} onClick={() => setView(v)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize
-                    ${view === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-                  {v}
-                </button>
-              ))}
-            </div>
+            {!isWeeklyType && (
+              <div className="flex items-center bg-gray-100 rounded-xl p-0.5">
+                {(['week', 'month'] as const).map(v => (
+                  <button key={v} onClick={() => setView(v)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize
+                      ${view === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                    {v}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -640,8 +644,8 @@ export default function WeeklyCalendar({
                         )}
                       </div>
                       <div className="mt-auto">
-                        <p className="text-xs text-gray-400 leading-tight">{bookerName}</p>
-                        <p className="text-sm font-semibold text-gray-900 leading-tight">Full day</p>
+                        <p className="text-[10px] sm:text-xs text-gray-400 leading-tight">{bookerName}</p>
+                        <p className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">Full day</p>
                       </div>
                     </SlotCell>
                   )];
@@ -676,10 +680,10 @@ export default function WeeklyCalendar({
                         </div>
                       )}
                       <div className="mt-auto pt-1">
-                        <p className="text-xs text-gray-400 leading-tight">
+                        <p className="text-[10px] sm:text-xs text-gray-400 leading-tight">
                           {slotBks.length > 0 ? bookerName : 'Available'}
                         </p>
-                        <p className="text-sm font-semibold text-gray-900 leading-tight">{label}</p>
+                        <p className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">{label}</p>
                       </div>
                     </SlotCell>
                   );

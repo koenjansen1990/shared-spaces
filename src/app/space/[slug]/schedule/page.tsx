@@ -140,6 +140,7 @@ export default async function SchedulePage({ params }: Props) {
           isAdmin={isAdmin}
           spaceSlug={slug}
           spaceId={space.id}
+          spaceType={(space as any).space_type ?? null}
           weeklyAllowance={weeklyAllowance}
           weeklyUsed={weeklyUsed}
           spaceInfo={spaceInfo}

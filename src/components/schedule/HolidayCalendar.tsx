@@ -413,7 +413,7 @@ export default function HolidayCalendar({
     <div className="flex gap-3 h-full relative">
 
       {/* ── Calendar panel ───────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-gray-200 overflow-hidden mb-16 md:mb-0">
+      <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
 
         {/* Toolbar */}
         <div className="flex-none flex items-center justify-between px-5 py-4 border-b border-gray-100">
