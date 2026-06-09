@@ -18,6 +18,7 @@ function toSlug(name: string): string {
 }
 
 export default function CreateSpaceForm() {
+  const [spaceType,   setSpaceType]   = useState<'workplace' | 'holiday_home' | null>(null);
   const [name,        setName]        = useState('');
   const [slug,        setSlug]        = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
@@ -43,7 +44,7 @@ export default function CreateSpaceForm() {
     setFieldError(null);
 
     startTransition(async () => {
-      const result = await createSpace({ name, slug, description });
+      const result = await createSpace({ name, slug, description, space_type: spaceType ?? undefined });
       // If createSpace succeeds it redirects; we only land here on failure.
       if (!result.success) {
         setError(result.error);
@@ -54,6 +55,28 @@ export default function CreateSpaceForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+
+      {/* Type picker */}
+      <div className="grid grid-cols-2 gap-3">
+        {([
+          { type: 'workplace',    emoji: '🏢', label: 'Workspace / Studio' },
+          { type: 'holiday_home', emoji: '🏡', label: 'Holiday Home, Van or Boat' },
+        ] as const).map(({ type, emoji, label }) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => setSpaceType(type)}
+            className={`text-left rounded-2xl border p-4 transition-all
+              ${spaceType === type
+                ? 'border-gray-900 bg-gray-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'}`}
+          >
+            <div className="text-2xl mb-2">{emoji}</div>
+            <p className="text-xs font-semibold text-gray-700 leading-snug">{label}</p>
+          </button>
+        ))}
+      </div>
+
       {/* Name */}
       <div className="space-y-1.5">
         <Label htmlFor="name">Space name</Label>
@@ -120,7 +143,7 @@ export default function CreateSpaceForm() {
         type="submit"
         variant="primary"
         size="lg"
-        disabled={isPending || !name.trim() || !slug.trim()}
+        disabled={isPending || !spaceType || !name.trim() || !slug.trim()}
       >
         {isPending ? 'Creating…' : 'Create Space'}
       </Button>

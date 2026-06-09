@@ -246,6 +246,7 @@ export type CreateSpaceInput = {
   name:         string;
   slug:         string;
   description?: string;
+  space_type?:  'workplace' | 'holiday_home';
 };
 
 export type CreateResourceInput = {

@@ -58,14 +58,15 @@ export async function createSpace(
   // so the anon-key client fails the RLS policy even though getUser() works.
   const serviceClient = createSupabaseServiceClient();
 
-  const { data: space, error: spaceError } = await serviceClient
-    .from('spaces')
+  const { data: space, error: spaceError } = await (serviceClient
+    .from('spaces') as any)
     .insert({
       name:        input.name.trim(),
       slug:        input.slug.trim(),
       description: input.description?.trim() || null,
       owner_id:    user.id,
       plan_type:   'free',
+      space_type:  input.space_type ?? null,
     })
     .select('id, slug')
     .single();
