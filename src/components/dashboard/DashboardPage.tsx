@@ -168,21 +168,22 @@ function SpaceCard({
   const typeEmoji       = space.space_type ? (SPACE_TYPE_EMOJI[space.space_type] ?? '🏢') : '🏢';
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+    <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+      {/* Three-dot menu — outside the Link to avoid nested <a> */}
+      {isOwner && (
+        <div className="absolute top-2 right-2 z-10">
+          <CardMenu space={{ id: space.id, name: space.name, slug: space.slug }} onDeleteRequest={onDeleteRequest} />
+        </div>
+      )}
+
       <Link href={`/space/${space.slug}/schedule`} className="flex flex-col flex-1">
-        {/* Hero — with floating menu button */}
+        {/* Hero */}
         <div className="relative h-32 w-full">
           {space.hero_image_url ? (
             <Image src={space.hero_image_url} alt={space.name} fill className="object-cover" />
           ) : (
             <div className="h-full w-full bg-gray-100 flex items-center justify-center text-4xl">
               {typeEmoji}
-            </div>
-          )}
-          {/* Three-dot menu — only for owners */}
-          {isOwner && (
-            <div className="absolute top-2 right-2">
-              <CardMenu space={{ id: space.id, name: space.name, slug: space.slug }} onDeleteRequest={onDeleteRequest} />
             </div>
           )}
         </div>
