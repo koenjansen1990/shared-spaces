@@ -63,31 +63,30 @@ export default function AvatarMenu({ email, initials, avatarUrl, isAdmin, slug }
             >
               Profile
             </Link>
-            {isAdmin ? (
-              <Link
-                href={`/space/${slug}/manage`}
-                onClick={() => setOpen(false)}
-                className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
-              >
-                My Spaces
-              </Link>
-            ) : (
-              <Link
-                href={`/space/${slug}/bookings`}
-                onClick={() => setOpen(false)}
-                className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
-              >
-                My Bookings
-              </Link>
-            )}
+            <Link
+              href="/dashboard"
+              onClick={() => setOpen(false)}
+              className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+            >
+              My Spaces
+            </Link>
             {isAdmin && (
-              <Link
-                href={`/space/${slug}/members`}
-                onClick={() => setOpen(false)}
-                className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
-              >
-                Members
-              </Link>
+              <>
+                <Link
+                  href={`/space/${slug}/manage`}
+                  onClick={() => setOpen(false)}
+                  className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                >
+                  Space Settings
+                </Link>
+                <Link
+                  href={`/space/${slug}/members`}
+                  onClick={() => setOpen(false)}
+                  className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                >
+                  Members
+                </Link>
+              </>
             )}
           </div>
 
