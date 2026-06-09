@@ -153,13 +153,13 @@ function SlotCell({ children, gridStyle, selected, onClick }: {
   const [hovered, setHovered] = useState(false);
   const style = selected ? SLOT_STYLE.selected : hovered ? SLOT_STYLE.hover : SLOT_STYLE.default;
   return (
-    <div style={gridStyle} className="p-1">
+    <div style={gridStyle} className="p-0.5 sm:p-1">
       <button
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={style}
-        className="w-full h-full px-1 sm:px-3 py-3 text-left flex flex-col transition-all"
+        className="w-full h-full px-1 sm:px-3 py-2 sm:py-3 text-left flex flex-col transition-all"
       >
         {children}
       </button>
@@ -635,17 +635,27 @@ export default function WeeklyCalendar({
                       selected
                       onClick={() => openModal(fullDay, date)}
                     >
-                      <div className="flex flex-col gap-2">
-                        <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={3} size="sm" />
-                        {noteText && (
-                          <div className="bg-white/60 rounded-xl px-2.5 py-1.5">
-                            <p className="text-xs text-gray-600 leading-snug line-clamp-3">{noteText}</p>
-                          </div>
-                        )}
+                      {/* Mobile: compact */}
+                      <div className="flex sm:hidden flex-col h-full items-center justify-between py-1">
+                        <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={1} size="sm" />
+                        <span className="mt-auto text-sm font-semibold text-gray-700">
+                          {(profileMap.get(fdBks[0]?.user_id ?? '')?.display_name?.trim()[0] ?? '?').toUpperCase()}
+                        </span>
                       </div>
-                      <div className="mt-auto">
-                        <p className="text-[10px] sm:text-xs text-gray-400 leading-tight">{bookerName}</p>
-                        <p className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">Full day</p>
+                      {/* Desktop: full layout */}
+                      <div className="hidden sm:flex flex-col h-full">
+                        <div className="flex flex-col gap-2">
+                          <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={3} size="sm" />
+                          {noteText && (
+                            <div className="bg-white/60 rounded-xl px-2.5 py-1.5">
+                              <p className="text-xs text-gray-600 leading-snug line-clamp-3">{noteText}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-auto">
+                          <p className="text-xs text-gray-400 leading-tight">{bookerName}</p>
+                          <p className="text-sm font-semibold text-gray-900 leading-tight">Full day</p>
+                        </div>
                       </div>
                     </SlotCell>
                   )];
@@ -655,7 +665,7 @@ export default function WeeklyCalendar({
                 return (['Morning', 'Afternoon'] as const).map((label, row) => {
                   const slot      = daySlots.find(s => slotLabel(s) === label);
                   if (!slot) return (
-                    <div key={`${col}-${label}`} style={{ gridColumn: col + 1, gridRow: row + 1 }} className="p-1">
+                    <div key={`${col}-${label}`} style={{ gridColumn: col + 1, gridRow: row + 1 }} className="p-0.5 sm:p-1">
                       <div style={SLOT_STYLE.default} className="w-full h-full" />
                     </div>
                   );
@@ -664,6 +674,9 @@ export default function WeeklyCalendar({
                   const firstBooker= slotBks[0];
                   const bookerName = firstBooker ? firstName(profileMap.get(firstBooker.user_id)?.display_name ?? null) : 'Available';
                   const noteText   = firstBooker?.notes ?? null;
+                  const bookerInitial = firstBooker
+                    ? (profileMap.get(firstBooker.user_id)?.display_name?.trim()[0] ?? '?').toUpperCase()
+                    : null;
                   return (
                     <SlotCell
                       key={`${col}-${label}`}
@@ -671,21 +684,33 @@ export default function WeeklyCalendar({
                       selected={mine}
                       onClick={() => openModal(slot, date)}
                     >
-                      {slotBks.length > 0 && (
-                        <div className="flex flex-col gap-2">
-                          <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={3} size="sm" />
-                          {noteText && (
-                            <div className="bg-white/60 rounded-xl px-2.5 py-1.5">
-                              <p className="text-xs text-gray-600 leading-snug line-clamp-2">{noteText}</p>
-                            </div>
-                          )}
+                      {/* Mobile: compact — initial or + */}
+                      <div className="flex sm:hidden flex-col h-full items-center justify-between py-1">
+                        {slotBks.length > 0 ? (
+                          <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={1} size="sm" />
+                        ) : null}
+                        <span className="mt-auto text-sm font-semibold text-gray-400">
+                          {slotBks.length > 0 ? bookerInitial : '+'}
+                        </span>
+                      </div>
+                      {/* Desktop: full layout */}
+                      <div className="hidden sm:flex flex-col h-full">
+                        {slotBks.length > 0 && (
+                          <div className="flex flex-col gap-2">
+                            <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={3} size="sm" />
+                            {noteText && (
+                              <div className="bg-white/60 rounded-xl px-2.5 py-1.5">
+                                <p className="text-xs text-gray-600 leading-snug line-clamp-2">{noteText}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="mt-auto pt-1">
+                          <p className="text-xs text-gray-400 leading-tight">
+                            {slotBks.length > 0 ? bookerName : 'Available'}
+                          </p>
+                          <p className="text-sm font-semibold text-gray-900 leading-tight">{label}</p>
                         </div>
-                      )}
-                      <div className="mt-auto pt-1">
-                        <p className="text-[10px] sm:text-xs text-gray-400 leading-tight">
-                          {slotBks.length > 0 ? bookerName : 'Available'}
-                        </p>
-                        <p className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">{label}</p>
                       </div>
                     </SlotCell>
                   );
