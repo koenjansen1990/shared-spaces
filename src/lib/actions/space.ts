@@ -48,6 +48,12 @@ export async function createSpace(
     };
   }
 
+  // ── Is this the user's first space? ──────────────────────
+  const { count: ownedCount } = await (supabase.from('spaces') as any)
+    .select('id', { count: 'exact', head: true })
+    .eq('owner_id', user.id);
+  const isFirstSpace = (ownedCount ?? 0) === 0;
+
   // ── Insert space + owner membership in one round-trip ────
   // Insert the space first, then add the membership.
   // Supabase doesn't support multi-table inserts in a single RPC call without
@@ -135,6 +141,13 @@ export async function createSpace(
       .eq('id', space.id);
   }
 
-  // Redirect happens outside try/catch so Next.js can handle it properly
+  // First-time users get the step-by-step wizard; returning users go straight in
+  if (!isFirstSpace) {
+    await (serviceClient.from('spaces') as any)
+      .update({ onboarding_completed_at: new Date().toISOString() })
+      .eq('id', space.id);
+    redirect(`/space/${space.slug}/schedule`);
+  }
+
   redirect(`/space/${space.slug}/setup`);
 }
