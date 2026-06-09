@@ -23,7 +23,7 @@ const DAYS = [
 ];
 
 export default function CreateSpaceForm() {
-  const [spaceType,   setSpaceType]   = useState<'workplace' | 'holiday_home' | null>(null);
+  const [spaceType,   setSpaceType]   = useState<'weekly' | 'monthly' | null>(null);
   const [name,        setName]        = useState('');
   const [slug,        setSlug]        = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
@@ -85,9 +85,9 @@ export default function CreateSpaceForm() {
       {/* Type picker */}
       <div className="grid grid-cols-2 gap-3">
         {([
-          { type: 'workplace',    emoji: '🏢', label: 'Workspace / Studio' },
-          { type: 'holiday_home', emoji: '🏡', label: 'Holiday Home, Van or Boat' },
-        ] as const).map(({ type, emoji, label }) => (
+          { type: 'weekly',  emoji: '📅', label: 'Weekly',  sub: 'Slot-based, granular planning' },
+          { type: 'monthly', emoji: '🗓️', label: 'Monthly', sub: 'Stay-based, yearly planning' },
+        ] as const).map(({ type, emoji, label, sub }) => (
           <button
             key={type}
             type="button"
@@ -99,6 +99,7 @@ export default function CreateSpaceForm() {
           >
             <div className="text-2xl mb-2">{emoji}</div>
             <p className="text-xs font-semibold text-gray-700 leading-snug">{label}</p>
+            <p className="text-xs text-gray-400 mt-0.5 leading-snug">{sub}</p>
           </button>
         ))}
       </div>
@@ -108,7 +109,7 @@ export default function CreateSpaceForm() {
         <div className="border-t border-gray-100 pt-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Rules</p>
 
-          {spaceType === 'workplace' ? (
+          {spaceType === 'weekly' ? (
             <>
               <div className="space-y-2">
                 <Label>Open days</Label>
@@ -161,7 +162,7 @@ export default function CreateSpaceForm() {
           required
           value={name}
           onChange={e => handleNameChange(e.target.value)}
-          placeholder="Otis Studio Collectief"
+          placeholder="The Barn Studio"
           className={fieldError === 'name' ? 'border-red-400 focus:border-red-400' : ''}
         />
         {fieldError === 'name' && error && (
@@ -182,7 +183,7 @@ export default function CreateSpaceForm() {
             required
             value={slug}
             onChange={e => handleSlugChange(e.target.value)}
-            placeholder="otis-studio"
+            placeholder="the-barn-studio"
             className="flex-1 bg-transparent px-4 py-4 text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
           />
         </div>

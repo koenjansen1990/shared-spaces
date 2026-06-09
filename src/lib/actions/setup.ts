@@ -123,8 +123,8 @@ export async function completeOnboarding(spaceId: string, welcomeMessage: string
   return { success: true as const, token: token.token };
 }
 
-// Step 0: save space type (workplace | holiday_home)
-export async function saveSpaceType(spaceId: string, spaceType: 'workplace' | 'holiday_home') {
+// Step 0: save space type (weekly | monthly)
+export async function saveSpaceType(spaceId: string, spaceType: 'weekly' | 'monthly') {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false as const, error: 'UNAUTHENTICATED' };
@@ -133,7 +133,7 @@ export async function saveSpaceType(spaceId: string, spaceType: 'workplace' | 'h
   return error ? { success: false as const, error: error.message } : { success: true as const };
 }
 
-// Step 2 (holiday home): save nights rules
+// Step 2 (monthly): save nights rules
 export async function saveHolidayRules(
   spaceId: string,
   nightsPerYear: number,

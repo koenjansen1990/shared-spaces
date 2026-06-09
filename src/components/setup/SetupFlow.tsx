@@ -26,8 +26,8 @@ export default function SetupFlow({ space }: Props) {
   const [error, setError]            = useState<string | null>(null);
 
   const searchParams = useSearchParams();
-  const existingType = (space as any).space_type as 'workplace' | 'holiday_home' | null ?? null;
-  const [spaceType, setSpaceType] = useState<'workplace' | 'holiday_home' | null>(existingType);
+  const existingType = (space as any).space_type as 'weekly' | 'monthly' | null ?? null;
+  const [spaceType, setSpaceType] = useState<'weekly' | 'monthly' | null>(existingType);
   const initialStep = existingType
     ? (searchParams.get('step') === '2' ? 2 : 1)
     : 0;
@@ -59,7 +59,7 @@ export default function SetupFlow({ space }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleStep0(type: 'workplace' | 'holiday_home') {
+  function handleStep0(type: 'weekly' | 'monthly') {
     setSpaceType(type);
     startTransition(async () => {
       await saveSpaceType(space.id, type);
@@ -80,7 +80,7 @@ export default function SetupFlow({ space }: Props) {
   async function handleStep2() {
     setError(null);
     startTransition(async () => {
-      if (spaceType === 'holiday_home') {
+      if (spaceType === 'monthly') {
         const r = await saveHolidayRules(space.id, nightsPerYear, maxConsecutive, advanceDays);
         if (!r.success) { setError(r.error); return; }
       } else {
@@ -135,30 +135,30 @@ export default function SetupFlow({ space }: Props) {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              {/* Workspace card */}
+              {/* Weekly card */}
               <button
                 type="button"
                 disabled={isPending}
-                onClick={() => handleStep0('workplace')}
+                onClick={() => handleStep0('weekly')}
                 className={`text-left bg-white border rounded-2xl p-6 hover:border-gray-400 cursor-pointer transition-all
-                  ${spaceType === 'workplace' ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}
+                  ${spaceType === 'weekly' ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}
               >
-                <div className="text-4xl mb-3">🏢</div>
-                <p className="text-lg font-bold text-gray-900">Workspace or Studio</p>
-                <p className="text-sm text-gray-400 mt-1">Book by morning or afternoon slots. Fair weekly hours per member.</p>
+                <div className="text-4xl mb-3">📅</div>
+                <p className="text-lg font-bold text-gray-900">Weekly</p>
+                <p className="text-sm text-gray-400 mt-1">Ideal for shared property that needs more granular planning. Book by slot, morning or afternoon.</p>
               </button>
 
-              {/* Holiday home card */}
+              {/* Monthly card */}
               <button
                 type="button"
                 disabled={isPending}
-                onClick={() => handleStep0('holiday_home')}
+                onClick={() => handleStep0('monthly')}
                 className={`text-left bg-white border rounded-2xl p-6 hover:border-gray-400 cursor-pointer transition-all
-                  ${spaceType === 'holiday_home' ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}
+                  ${spaceType === 'monthly' ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}
               >
-                <div className="text-4xl mb-3">🏡</div>
-                <p className="text-lg font-bold text-gray-900">Holiday Home, Van or Boat</p>
-                <p className="text-sm text-gray-400 mt-1">Book multi-day stays. Fair annual nights per member.</p>
+                <div className="text-4xl mb-3">🗓️</div>
+                <p className="text-lg font-bold text-gray-900">Monthly</p>
+                <p className="text-sm text-gray-400 mt-1">Suitable for shared property that needs longer-term, yearly planning. Book multi-day stays.</p>
               </button>
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function SetupFlow({ space }: Props) {
 
             <div className="space-y-4">
               <Input autoFocus value={name} onChange={e => setName(e.target.value)}
-                placeholder="Otis August Studio" className="text-2xl font-medium" />
+                placeholder="The Barn Studio" className="text-2xl font-medium" />
               <Textarea value={description} onChange={e => setDesc(e.target.value)}
                 placeholder="A short description — optional. What kind of space is this?"
                 rows={3} className="text-lg" />
@@ -189,8 +189,8 @@ export default function SetupFlow({ space }: Props) {
           </div>
         )}
 
-        {/* ── Step 2 (workplace / studio) ── */}
-        {step === 2 && spaceType !== 'holiday_home' && (
+        {/* ── Step 2 (weekly) ── */}
+        {step === 2 && spaceType !== 'monthly' && (
           <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest text-gray-400">Step 2 of 3</p>
@@ -236,8 +236,8 @@ export default function SetupFlow({ space }: Props) {
           </div>
         )}
 
-        {/* ── Step 2 (holiday home) ── */}
-        {step === 2 && spaceType === 'holiday_home' && (
+        {/* ── Step 2 (monthly) ── */}
+        {step === 2 && spaceType === 'monthly' && (
           <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest text-gray-400">Step 2 of 3</p>

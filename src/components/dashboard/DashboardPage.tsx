@@ -9,13 +9,13 @@ import { deleteSpace } from '@/lib/actions/space';
 import type { SpaceMembership } from '@/app/dashboard/page';
 
 const SPACE_TYPE_LABELS: Record<string, string> = {
-  workplace:    'Workspace / Studio',
-  holiday_home: 'Holiday Home',
+  weekly:  'Weekly planning',
+  monthly: 'Monthly planning',
 };
 
 const SPACE_TYPE_EMOJI: Record<string, string> = {
-  workplace:    '🏢',
-  holiday_home: '🏡',
+  weekly:  '📅',
+  monthly: '🗓️',
 };
 
 // ── Delete confirmation modal ────────────────────────────
@@ -165,7 +165,7 @@ function SpaceCard({
   const isAdmin         = role === 'owner' || role === 'admin';
   const setupIncomplete = !space.onboarding_completed_at;
   const typeLabel       = space.space_type ? (SPACE_TYPE_LABELS[space.space_type] ?? space.space_type) : null;
-  const typeEmoji       = space.space_type ? (SPACE_TYPE_EMOJI[space.space_type] ?? '🏢') : '🏢';
+  const typeEmoji       = space.space_type ? (SPACE_TYPE_EMOJI[space.space_type] ?? '📅') : '📅';
 
   return (
     <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
@@ -255,10 +255,10 @@ export default function DashboardPage({ owned: initialOwned, member }: Props) {
 
         {!hasSpaces && (
           <div className="bg-white rounded-2xl border border-gray-200 p-12 flex flex-col items-center text-center gap-4">
-            <span className="text-5xl">🏢</span>
+            <span className="text-5xl">📅</span>
             <h2 className="text-lg font-semibold text-gray-900">No spaces yet</h2>
             <p className="text-sm text-gray-500 max-w-xs">
-              Create your first space to get started. Invite your team and manage bookings together.
+              Create your first shared space and invite your group to start planning together.
             </p>
             <Link href="/spaces/new">
               <Button variant="primary" size="md">Create a space</Button>

@@ -12,7 +12,7 @@ export type PlanType      = 'free' | 'premium' | 'enterprise';
 export type SlotType      = 'recurring' | 'event';
 export type BookingStatus = 'confirmed' | 'cancelled' | 'waitlisted';
 export type CalendarView  = 'daily' | 'weekly' | 'monthly' | 'yearly';
-export type SpaceType     = 'workplace' | 'holiday_home';
+export type SpaceType     = 'weekly' | 'monthly';
 export type RuleKey =
   | 'max_credits_per_week'
   | 'max_bookings_per_week'
@@ -246,7 +246,7 @@ export type CreateSpaceInput = {
   name:             string;
   slug:             string;
   description?:     string;
-  space_type?:      'workplace' | 'holiday_home';
+  space_type?:      'weekly' | 'monthly';
   // Studio rules
   days?:            number[];
   hours_per_week?:  number;
@@ -310,7 +310,7 @@ export type Database = {
   public: {
     Tables: {
       spaces: {
-        Row:           Space & { space_type: SpaceType };
+        Row:           Space & { space_type: SpaceType | null };
         Insert:        SpaceInsert & { space_type?: SpaceType };
         Update:        SpaceUpdate & { space_type?: SpaceType };
         Relationships: [];

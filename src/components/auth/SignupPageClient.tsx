@@ -15,7 +15,7 @@ const TRAIL_IMAGES = [
   '/trail/08.jpg',
 ];
 
-const CYCLING_WORDS = ['Workspace', 'Studio', 'Holiday Home', 'Boat', 'Camper'];
+const CYCLING_WORDS = ['Studio', 'Holiday Home', 'Boat', 'Camper', 'Van', 'Workshop'];
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -169,7 +169,7 @@ function MorphButton() {
               { icon: '⏱', label: 'Hours per member', sub: 'Set a fair weekly allowance' },
               { icon: '📅', label: 'Booking calendar', sub: 'Morning, afternoon or full day' },
               { icon: '🔗', label: 'Invite with a link', sub: 'No admin overhead' },
-              { icon: '🏠', label: 'Works for any space', sub: 'Studio, office or holiday home' },
+              { icon: '🏠', label: 'Works for any shared property', sub: 'Studio, camper, boat, holiday home…' },
             ].map(f => (
               <div key={f.label} className="flex items-start gap-3">
                 <span className="text-base mt-0.5">{f.icon}</span>

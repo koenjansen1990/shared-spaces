@@ -96,7 +96,7 @@ export async function createSpace(
   }
 
   // Save rules based on space type
-  if (input.space_type === 'workplace') {
+  if (input.space_type === 'weekly') {
     const hoursPerWeek = input.hours_per_week ?? 40;
     const days         = input.days ?? [1, 2, 3, 4, 5];
 
@@ -131,7 +131,7 @@ export async function createSpace(
         );
       }
     }
-  } else if (input.space_type === 'holiday_home') {
+  } else if (input.space_type === 'monthly') {
     await (serviceClient.from('spaces') as any)
       .update({
         holiday_nights_per_year:    input.nights_per_year   ?? 30,

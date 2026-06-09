@@ -21,7 +21,7 @@ interface Props {
 
 export default function ManagePage({ space, slug, hoursPerWeek: initHours, nightsPerYear: initNights, maxConsecutive: initConsecutive, advanceDays: initAdvance }: Props) {
   const router = useRouter();
-  const spaceType = (space as any).space_type as 'workplace' | 'holiday_home' | null;
+  const spaceType = (space as any).space_type as 'weekly' | 'monthly' | null;
 
   const [name,        setName]        = useState(space.name);
   const [description, setDescription] = useState(space.description ?? '');
@@ -42,7 +42,7 @@ export default function ManagePage({ space, slug, hoursPerWeek: initHours, night
   const [inviteUrl,     setInviteUrl]     = useState<string | null>(null);
   const [loadingInvite, setLoadingInvite] = useState(false);
 
-  // Rules (studio or holiday home)
+  // Rules (weekly or monthly)
   const [hoursPerWeek,   setHoursPerWeek]   = useState(initHours);
   const [nightsPerYear,  setNightsPerYear]  = useState(initNights);
   const [maxConsecutive, setMaxConsecutive] = useState(initConsecutive);
@@ -88,7 +88,7 @@ export default function ManagePage({ space, slug, hoursPerWeek: initHours, night
   async function handleSaveRules() {
     setRulesMsg(null);
     startRules(async () => {
-      const r = spaceType === 'holiday_home'
+      const r = spaceType === 'monthly'
         ? await saveHolidayRules(space.id, nightsPerYear, maxConsecutive, advanceDays)
         : await saveAvailability(space.id, space.name, [], hoursPerWeek, 10, 1);
       setRulesMsg(r.success ? 'Saved.' : (r.error ?? 'Error'));
@@ -207,7 +207,7 @@ export default function ManagePage({ space, slug, hoursPerWeek: initHours, night
       <section className="space-y-5 pt-4 border-t border-gray-200">
         <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Rules</h2>
 
-        {spaceType === 'holiday_home' ? (
+        {spaceType === 'monthly' ? (
           <>
             <div className="space-y-2">
               <Label>Nights per year per member</Label>
