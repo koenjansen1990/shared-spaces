@@ -341,33 +341,14 @@ function SlotModal({ item, onClose, onBooked, onNoteUpdated, userId, spaceId, pr
         {/* Note — all states */}
         {error !== 'conflict' && (
           !booked || isMine ? (
-            // New booking or my existing booking
-            <div className="space-y-2">
-              {/* Saved note bubble */}
-              {originalNote && (
-                <div className="flex gap-2 items-start">
-                  {myProfile?.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={myProfile.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5" />
-                  ) : (
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold text-white shrink-0 mt-0.5 ${avatarColor(userId)}`}>
-                      {myInitials}
-                    </div>
-                  )}
-                  <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2 flex-1">
-                    <p className="text-sm text-gray-800 leading-snug">{originalNote}</p>
-                  </div>
-                </div>
-              )}
-              {/* Edit / new textarea */}
-              <textarea
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                placeholder={originalNote ? 'Edit your note…' : 'Leave a note…'}
-                rows={originalNote ? 1 : 2}
-                className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
-              />
-            </div>
+            // New booking or my existing booking: single editable textarea
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Leave a note…"
+              rows={2}
+              className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none"
+            />
           ) : booking?.notes ? (
             // Someone else's booking: read-only bubble
             <div className="flex gap-2 items-start">
