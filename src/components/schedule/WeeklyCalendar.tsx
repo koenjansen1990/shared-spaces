@@ -629,15 +629,15 @@ export default function WeeklyCalendar({
                       selected
                       onClick={() => openModal(fullDay, date)}
                     >
-                      <div className="mb-auto">
+                      <div className="flex flex-col gap-2">
                         <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={3} />
+                        {noteText && (
+                          <div className="bg-white/60 rounded-xl px-2.5 py-1.5">
+                            <p className="text-xs text-gray-600 leading-snug line-clamp-3">{noteText}</p>
+                          </div>
+                        )}
                       </div>
-                      {noteText && (
-                        <div className="mt-2 bg-white/60 rounded-xl px-2.5 py-1.5">
-                          <p className="text-xs text-gray-600 leading-snug line-clamp-3">{noteText}</p>
-                        </div>
-                      )}
-                      <div className="mt-auto pt-2">
+                      <div className="mt-auto">
                         <p className="text-xs text-gray-400 leading-tight">{bookerName}</p>
                         <p className="text-sm font-semibold text-gray-900 leading-tight">Full day</p>
                       </div>
@@ -664,13 +664,13 @@ export default function WeeklyCalendar({
                       onClick={() => openModal(slot, date)}
                     >
                       {slotBks.length > 0 && (
-                        <div className="mb-auto">
+                        <div className="flex flex-col gap-2">
                           <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={3} />
-                        </div>
-                      )}
-                      {noteText && (
-                        <div className="mt-2 bg-white/60 rounded-xl px-2.5 py-1.5">
-                          <p className="text-xs text-gray-600 leading-snug line-clamp-2">{noteText}</p>
+                          {noteText && (
+                            <div className="bg-white/60 rounded-xl px-2.5 py-1.5">
+                              <p className="text-xs text-gray-600 leading-snug line-clamp-2">{noteText}</p>
+                            </div>
+                          )}
                         </div>
                       )}
                       <div className="mt-auto pt-1">
