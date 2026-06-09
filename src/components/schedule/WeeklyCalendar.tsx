@@ -153,13 +153,13 @@ function SlotCell({ children, gridStyle, selected, onClick }: {
   const [hovered, setHovered] = useState(false);
   const style = selected ? SLOT_STYLE.selected : hovered ? SLOT_STYLE.hover : SLOT_STYLE.default;
   return (
-    <div style={gridStyle} className="p-0.5 sm:p-1">
+    <div style={gridStyle} className="p-0.5 lg:p-1">
       <button
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={style}
-        className="w-full h-full px-1 sm:px-3 py-2 sm:py-3 text-left flex flex-col transition-all"
+        className="w-full h-full px-1 lg:px-3 py-2 lg:py-3 text-left flex flex-col transition-all"
       >
         {children}
       </button>
@@ -636,14 +636,14 @@ export default function WeeklyCalendar({
                       onClick={() => openModal(fullDay, date)}
                     >
                       {/* Mobile: compact */}
-                      <div className="flex sm:hidden flex-col h-full items-center justify-between py-1">
+                      <div className="flex lg:hidden flex-col h-full items-center justify-between py-1">
                         <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={1} size="sm" />
                         <span className="mt-auto text-sm font-semibold text-gray-700">
                           {(profileMap.get(fdBks[0]?.user_id ?? '')?.display_name?.trim()[0] ?? '?').toUpperCase()}
                         </span>
                       </div>
                       {/* Desktop: full layout */}
-                      <div className="hidden sm:flex flex-col h-full">
+                      <div className="hidden lg:flex flex-col h-full">
                         <div className="flex flex-col gap-2">
                           <AvatarStack userIds={fdBks.map(b => b.user_id)} profiles={profiles} max={3} size="sm" />
                           {noteText && (
@@ -665,7 +665,7 @@ export default function WeeklyCalendar({
                 return (['Morning', 'Afternoon'] as const).map((label, row) => {
                   const slot      = daySlots.find(s => slotLabel(s) === label);
                   if (!slot) return (
-                    <div key={`${col}-${label}`} style={{ gridColumn: col + 1, gridRow: row + 1 }} className="p-0.5 sm:p-1">
+                    <div key={`${col}-${label}`} style={{ gridColumn: col + 1, gridRow: row + 1 }} className="p-0.5 lg:p-1">
                       <div style={SLOT_STYLE.default} className="w-full h-full" />
                     </div>
                   );
@@ -685,7 +685,7 @@ export default function WeeklyCalendar({
                       onClick={() => openModal(slot, date)}
                     >
                       {/* Mobile: compact — initial or + */}
-                      <div className="flex sm:hidden flex-col h-full items-center justify-between py-1">
+                      <div className="flex lg:hidden flex-col h-full items-center justify-between py-1">
                         {slotBks.length > 0 ? (
                           <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={1} size="sm" />
                         ) : null}
@@ -694,7 +694,7 @@ export default function WeeklyCalendar({
                         </span>
                       </div>
                       {/* Desktop: full layout */}
-                      <div className="hidden sm:flex flex-col h-full">
+                      <div className="hidden lg:flex flex-col h-full">
                         {slotBks.length > 0 && (
                           <div className="flex flex-col gap-2">
                             <AvatarStack userIds={slotBks.map(b => b.user_id)} profiles={profiles} max={3} size="sm" />
