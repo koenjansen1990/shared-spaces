@@ -119,7 +119,7 @@ export default async function SchedulePage({ params }: Props) {
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 84px)' }}>
-      {(space as any).space_type === 'monthly' ? (
+      {((space as any).space_type === 'monthly' || (space as any).space_type === 'holiday_home') ? (
         <HolidayCalendar
           userId={user.id}
           spaceId={space.id}

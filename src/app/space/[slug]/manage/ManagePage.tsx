@@ -88,7 +88,7 @@ export default function ManagePage({ space, slug, hoursPerWeek: initHours, night
   async function handleSaveRules() {
     setRulesMsg(null);
     startRules(async () => {
-      const r = spaceType === 'monthly'
+      const r = (spaceType === 'monthly' || spaceType === 'holiday_home')
         ? await saveHolidayRules(space.id, nightsPerYear, maxConsecutive, advanceDays)
         : await saveAvailability(space.id, space.name, [], hoursPerWeek, 10, 1);
       setRulesMsg(r.success ? 'Saved.' : (r.error ?? 'Error'));
@@ -207,7 +207,7 @@ export default function ManagePage({ space, slug, hoursPerWeek: initHours, night
       <section className="space-y-5 pt-4 border-t border-gray-200">
         <h2 className="text-xs uppercase tracking-widest text-gray-400 font-medium">Rules</h2>
 
-        {spaceType === 'monthly' ? (
+        {(spaceType === 'monthly' || spaceType === 'holiday_home') ? (
           <>
             <div className="space-y-2">
               <Label>Nights per year per member</Label>

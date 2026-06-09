@@ -80,7 +80,7 @@ export default function SetupFlow({ space }: Props) {
   async function handleStep2() {
     setError(null);
     startTransition(async () => {
-      if (spaceType === 'monthly') {
+      if (spaceType === 'monthly' || spaceType === 'holiday_home') {
         const r = await saveHolidayRules(space.id, nightsPerYear, maxConsecutive, advanceDays);
         if (!r.success) { setError(r.error); return; }
       } else {
@@ -190,7 +190,7 @@ export default function SetupFlow({ space }: Props) {
         )}
 
         {/* ── Step 2 (weekly) ── */}
-        {step === 2 && spaceType !== 'monthly' && (
+        {step === 2 && spaceType !== 'monthly' && spaceType !== 'holiday_home' && (
           <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest text-gray-400">Step 2 of 3</p>
@@ -237,7 +237,7 @@ export default function SetupFlow({ space }: Props) {
         )}
 
         {/* ── Step 2 (monthly) ── */}
-        {step === 2 && spaceType === 'monthly' && (
+        {step === 2 && (spaceType === 'monthly' || spaceType === 'holiday_home') && (
           <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest text-gray-400">Step 2 of 3</p>
