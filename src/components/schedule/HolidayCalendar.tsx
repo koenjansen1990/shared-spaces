@@ -616,17 +616,21 @@ export default function HolidayCalendar({
           className={`fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl flex flex-col overflow-hidden transition-transform duration-300 ease-out ${panelOpen ? 'translate-y-0' : 'translate-y-full'}`}
           style={{ maxHeight: '85vh' }}
         >
-          <div className="flex-none flex justify-center pt-3 pb-2">
-            <div className="w-10 h-1 bg-gray-200 rounded-full" />
-          </div>
-
           <div className="flex-1 overflow-y-auto min-h-0">
             <div>
-              {spaceInfo.heroImageUrl && (
+              {spaceInfo.heroImageUrl ? (
                 <div className="relative" style={{ height: '180px' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={spaceInfo.heroImageUrl} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, white 100%)' }} />
+                  {/* Drag handle overlaid on image */}
+                  <div className="absolute top-3 inset-x-0 flex justify-center">
+                    <div className="w-10 h-1 bg-white/60 rounded-full" />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center pt-3 pb-2">
+                  <div className="w-10 h-1 bg-gray-200 rounded-full" />
                 </div>
               )}
               <div className="px-5 flex items-center" style={{ height: '56px' }}>
