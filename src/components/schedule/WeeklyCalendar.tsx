@@ -565,8 +565,7 @@ export default function WeeklyCalendar({
             <button onClick={goToday} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
               Today
             </button>
-            {!isWeeklyType && (
-              <div className="flex items-center bg-gray-100 rounded-xl p-0.5">
+            <div className="flex items-center bg-gray-100 rounded-xl p-0.5">
                 {(['week', 'month'] as const).map(v => (
                   <button key={v} onClick={() => setView(v)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize
@@ -574,8 +573,7 @@ export default function WeeklyCalendar({
                     {v}
                   </button>
                 ))}
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
