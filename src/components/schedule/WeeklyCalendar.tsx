@@ -417,7 +417,7 @@ function SlotModal({ item, onClose, onBooked, onNoteUpdated, userId, spaceId, pr
 export type CalendarSlot    = Slot & { resource_name: string };
 export type CalendarBooking = Pick<Booking, 'id' | 'slot_id' | 'booking_date' | 'user_id' | 'status' | 'credits_consumed' | 'notes'>;
 export type CalendarProfile = { id: string; display_name: string | null; avatar_url: string | null };
-export type SpaceInfo       = { name: string; welcomeMessage: string | null; address: string | null; heroImageUrl: string | null };
+export type SpaceInfo       = { name: string; description: string | null; welcomeMessage: string | null; address: string | null; heroImageUrl: string | null };
 export type MemberInfo      = { userId: string; displayName: string | null; avatarUrl: string | null; weeklyAllowance: number };
 
 interface Props {
@@ -825,6 +825,9 @@ export default function WeeklyCalendar({
             <div className="px-5 flex items-center" style={{ height: '64px' }}>
               <h2 className="text-base font-semibold text-gray-900">{spaceInfo.name}</h2>
             </div>
+            {spaceInfo.description && (
+              <p className="px-5 pb-3 text-sm text-gray-500 leading-relaxed">{spaceInfo.description}</p>
+            )}
             {spaceInfo.welcomeMessage && (
               <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
             )}
@@ -931,6 +934,9 @@ export default function WeeklyCalendar({
               <div className="px-5 flex items-center" style={{ height: '56px' }}>
                 <h2 className="text-base font-semibold text-gray-900">{spaceInfo.name}</h2>
               </div>
+              {spaceInfo.description && (
+                <p className="px-5 pb-3 text-sm text-gray-500 leading-relaxed">{spaceInfo.description}</p>
+              )}
               {spaceInfo.welcomeMessage && (
                 <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
               )}

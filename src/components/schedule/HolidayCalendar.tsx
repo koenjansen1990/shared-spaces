@@ -20,12 +20,13 @@ export interface HolidayProfile {
   avatar_url:   string | null;
 }
 
-export interface HolidaySpaceInfo {
+export type HolidaySpaceInfo = {
   name:           string;
+  description:    string | null;
   welcomeMessage: string | null;
   address:        string | null;
   heroImageUrl:   string | null;
-}
+};
 
 export interface HolidayMemberInfo {
   userId:      string;
@@ -535,6 +536,9 @@ export default function HolidayCalendar({
             <div className="px-5 flex items-center" style={{ height: '64px' }}>
               <h2 className="text-base font-semibold text-gray-900">{spaceInfo.name}</h2>
             </div>
+            {spaceInfo.description && (
+              <p className="px-5 pb-3 text-sm text-gray-500 leading-relaxed">{spaceInfo.description}</p>
+            )}
             {spaceInfo.welcomeMessage && (
               <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
             )}

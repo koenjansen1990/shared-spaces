@@ -25,7 +25,7 @@ export default async function SchedulePage({ params }: Props) {
 
   const { data: space } = await supabase
     .from('spaces')
-    .select('id, name, welcome_message, address, hero_image_url, space_type')
+    .select('id, name, description, welcome_message, address, hero_image_url, space_type')
     .eq('slug', slug)
     .single();
 
@@ -105,6 +105,7 @@ export default async function SchedulePage({ params }: Props) {
 
   const spaceInfo: SpaceInfo = {
     name:           space.name,
+    description:    space.description ?? null,
     welcomeMessage: space.welcome_message ?? null,
     address:        space.address ?? null,
     heroImageUrl:   space.hero_image_url ?? null,
