@@ -831,7 +831,7 @@ export default function WeeklyCalendar({
             {spaceInfo.welcomeMessage && (
               <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
             )}
-            <hr className="border-gray-100 mx-5" />
+            <hr className="border-gray-100 mx-5 my-5" />
           </div>
 
           {/* Location */}
@@ -855,7 +855,7 @@ export default function WeeklyCalendar({
 
         {/* Bottom: members + settings */}
         <div>
-          <hr className="border-gray-100 mx-5" />
+          <hr className="border-gray-100 mx-5 my-5" />
 
           {/* Members */}
           <div className="p-5 space-y-4">
@@ -940,7 +940,7 @@ export default function WeeklyCalendar({
               {spaceInfo.welcomeMessage && (
                 <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
               )}
-              <hr className="border-gray-100 mx-5" />
+              <hr className="border-gray-100 mx-5 my-5" />
             </div>
 
             {/* Location */}

@@ -542,7 +542,7 @@ export default function HolidayCalendar({
             {spaceInfo.welcomeMessage && (
               <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
             )}
-            <hr className="border-gray-100 mx-5" />
+            <hr className="border-gray-100 mx-5 my-5" />
           </div>
 
           {spaceInfo.address && (
@@ -563,7 +563,7 @@ export default function HolidayCalendar({
         </div>
 
         <div>
-          <hr className="border-gray-100 mx-5" />
+          <hr className="border-gray-100 mx-5 my-5" />
           <div className="p-5 space-y-4">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Members</p>
             <div className="space-y-3">
@@ -635,7 +635,7 @@ export default function HolidayCalendar({
               {spaceInfo.welcomeMessage && (
                 <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{spaceInfo.welcomeMessage}</p>
               )}
-              <hr className="border-gray-100 mx-5" />
+              <hr className="border-gray-100 mx-5 my-5" />
             </div>
 
             {spaceInfo.address && (
